@@ -1,0 +1,5 @@
+tabpfn==2.0.8
+tabpfn-extensions[all] @ git+https://github.com/PriorLabs/tabpfn-extensions.git
+matplotlib==3.10.1
+seaborn==0.13.2
+pandas==2.2.3

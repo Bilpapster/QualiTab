@@ -24,17 +24,19 @@ df = load_breast_cancer(return_X_y=False)
 X, y = df["data"], df["target"]
 attribute_names = df["feature_names"]
 
+RANDOM_SEED = 22
+
 # Split the data
 X_train, X_test, y_train, y_test = train_test_split(
     X,
     y,
     test_size=0.5,
-    random_state=42,
+    random_state=RANDOM_SEED,
 )
 
 
 # Train and evaluate vanilla logistic regression
-model = LogisticRegression()
+model = LogisticRegression(max_iter=10000)
 model.fit(X_train, y_train)
 print(
     f"Baseline Logistic Regression Accuracy: {accuracy_score(y_test, model.predict(X_test)):.4f}",

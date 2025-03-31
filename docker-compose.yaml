@@ -1,0 +1,6 @@
+services:
+  python-app:
+    build: .
+    volumes:
+      - ./src:/app/
+    tty: true
