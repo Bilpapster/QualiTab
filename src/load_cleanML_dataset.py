@@ -36,11 +36,3 @@ def load_dataset(dataset_name):
     test_data = pd.read_csv(test_file_path)
 
     return train_data, test_data
-
-
-# Example usage
-if __name__ == "__main__":
-    dataset_name = 'Airbnb'
-    train_df, test_df = load_dataset(dataset_name)
-    print(f"Train data shape: {train_df.shape}")
-    print(f"Test data shape: {test_df.shape}")
