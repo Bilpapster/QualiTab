@@ -76,7 +76,7 @@ def load_dataset(dataset_config):
     X_test = test_data.drop(columns=[target_column])
     y_test = test_data[target_column]
 
-    MAX_SAMPLES = 1e4 # TabPFN's limit is 10K data samples
+    MAX_SAMPLES = int(1e4) # TabPFN's limit is 10K data samples
     X_train, y_train, X_test, y_test = X_train[:MAX_SAMPLES], y_train[:MAX_SAMPLES], X_test[:MAX_SAMPLES], y_test[:MAX_SAMPLES]
 
     return X_train, y_train, X_test, y_test, used_default_split, random_seed
