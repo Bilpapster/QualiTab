@@ -1,6 +1,34 @@
 services:
-  python-app:
+  tabpfn:
     build: .
+    container_name: tabpfn
+    depends_on:
+      - postgres
     volumes:
       - ./src:/app/
+    env_file:
+      - .env
     tty: true
+
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    ports:
+      - "5432:5432"  # Map container port to host port
+    env_file:
+      - .env
+    volumes:
+      - ./postgres_data/:/var/lib/postgresql/data  # Persist data to a named volume
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Mount the init script from the host machine inside the container
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+
+#volumes:
+#  postgres_data:
