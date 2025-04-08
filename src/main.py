@@ -54,7 +54,7 @@ if __name__ == "__main__":
         {'name': 'Company', 'task': 'classification', 'target_column': 'Sentiment'},
         {'name': 'Credit', 'task': 'classification', 'target_column': 'SeriousDlqin2yrs'},
         {'name': 'EEG', 'task': 'classification', 'target_column': 'Eye'},
-        {'name': 'KDD', 'task': 'classification', 'target_column': 'is_exciting_20'},
+        # {'name': 'KDD', 'task': 'classification', 'target_column': 'is_exciting_20'}, # for some reason runs out of memory, so temporarily is commented out
         {'name': 'Marketing', 'task': 'classification', 'target_column': 'Income'},
         {'name': 'Movie', 'task': 'classification', 'target_column': 'genres'},
         {'name': 'Restaurant', 'task': 'classification', 'target_column': 'priceRange'},
