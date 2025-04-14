@@ -1,6 +1,7 @@
 import psycopg2  # For database interaction
 import json # For storing embeddings
 import uuid
+import os
 from load_cleanML_dataset import load_dataset, extract_embeddings
 import logging
 
@@ -17,10 +18,10 @@ def parse_random_seeds_list(s):
 def run_experiment(dataset_configs):
     """Runs experiments and stores results in the database."""
     conn = psycopg2.connect(
-        host="localhost",  # Or the hostname of your Docker container
-        database="postgres",
-        user="postgres",
-        password="postgres",
+        host=os.getenv("POSTRGES_HOST", "localhost"),
+        user=os.getenv("POSTRGES_USER", "postgres"),
+        password=os.getenv("POSTRGES_PASSWORD", "postgres"),
+        database=os.getenv("POSTRGES_DB", "postgres"),
     )
     cursor = conn.cursor()
 
