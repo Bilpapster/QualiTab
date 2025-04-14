@@ -7,6 +7,13 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+def parse_random_seeds_list(s):
+    """
+    Converts a comma-separated string of integers into a list of ints.
+    Example: "100,200,300..." -> [100, 200, 300, ...]
+    """
+    return [int(x.strip()) for x in s.strip().split(',')]
+
 def run_experiment(dataset_configs):
     """Runs experiments and stores results in the database."""
     conn = psycopg2.connect(
