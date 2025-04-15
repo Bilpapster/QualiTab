@@ -77,7 +77,9 @@ def load_dataset(dataset_config):
     y_test = test_data[target_column]
 
     MAX_SAMPLES = int(1e4) # TabPFN's limit is 10K data samples
-    X_train, y_train, X_test, y_test = X_train[:MAX_SAMPLES], y_train[:MAX_SAMPLES], X_test[:MAX_SAMPLES], y_test[:MAX_SAMPLES]
+    # todo: now we take the first 10K points in case X_train contains more samples.
+    # todo: we should consider also the case to randomly sample 10K samples from the train set with random.choice().
+    X_train, y_train, X_test, y_test = X_train[:MAX_SAMPLES], y_train[:MAX_SAMPLES], X_test, y_test
 
     return X_train, y_train, X_test, y_test, used_default_split, random_seed
 
