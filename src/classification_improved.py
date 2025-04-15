@@ -46,12 +46,11 @@ for dataset_config in dataset_configs:
         batch = X_test[i:i + MAX_SAMPLES_INFERENCE]
         batch_probabilities = clf.predict_proba(batch)
 
-        if prediction_probabilities is not None:
+        if prediction_probabilities is None:
             prediction_probabilities = np.array(batch_probabilities)
             continue
-        prediction_probabilities = np.concatenate(prediction_probabilities, np.array(batch_probabilities))
-        logger.info(f"\tFinished inference for samples {i} -- {i + MAX_SAMPLES_INFERENCE - 1}")
-
+        prediction_probabilities = np.concatenate((prediction_probabilities, batch_probabilities), axis=0)
+        logger.info(f"\tFinished inference for samples {i} -- {i + len(X_train) - 1}")
     logger.info(f"Inference finished.")
     predictions = np.argmax(prediction_probabilities, axis=1)
     predictions = np.array([classes[i] for i in predictions])
