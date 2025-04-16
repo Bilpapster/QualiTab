@@ -1,14 +1,55 @@
 import os, time, uuid
 import numpy as np
-import psycopg2
 from tabpfn import TabPFNClassifier
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_score, recall_score
 
 from load_cleanML_dataset import load_dataset
 from cleanML_dataset_configs import classification_dataset_configs
-from utils import configure_logging
+from utils import configure_logging, connect_to_db
 
 logger = configure_logging()
+
+
+def get_classification_experiment_insertion_query(result: dict) -> dict:
+   """
+    Returns the SQL query for inserting classification experiment results into the database
+    in the form of a dictionary that contains the query and the values to be inserted.
+   """
+   return {
+       'query': """
+            INSERT INTO classification_experiments (
+                experiment_id,
+                dataset_name,
+                train_size,
+                test_size,
+                used_default_split,
+                random_seed,
+                roc_auc,
+                accuracy,
+                recall,
+                precision,
+                f1_score,
+                execution_time,
+                tag
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+       'vars': (
+           str(uuid.uuid4()),
+           result['dataset'],
+           result['train_size'],
+           result['test_size'],
+           result['used_default_split'],
+           result['random_seed'],
+           result['roc_auc'],
+           result['accuracy'],
+           result['recall'],
+           result['precision'],
+           result['f1_score'],
+           result['execution_time'],
+           "dirty-dirty",
+       ),
+   }
 
 
 def write_classification_experiment_result_to_db(result: dict):
@@ -18,42 +59,17 @@ def write_classification_experiment_result_to_db(result: dict):
     inserts the experiment data into the classification_experiments table,
     and logs the success or failure of the operation.
     """
-    conn = psycopg2.connect(
-        host=os.getenv("POSTRGES_HOST", "localhost"),
-        user=os.getenv("POSTRGES_USER", "postgres"),
-        password=os.getenv("POSTRGES_PASSWORD", "postgres"),
-        database=os.getenv("POSTRGES_DB", "postgres"),
-    )
-    cursor = conn.cursor()
-    experiment_id = uuid.uuid4()
+    conn, cursor = connect_to_db()
     try:
-        cursor.execute(
-            query="INSERT INTO classification_experiments (experiment_id, dataset_name, train_size, test_size, used_default_split, random_seed, roc_auc, accuracy, recall, precision, f1_score, execution_time, tag) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            values = (
-                str(experiment_id),
-                result['dataset'],
-                result['train_size'],
-                result['test_size'],
-                result['used_default_split'],
-                result['random_seed'],
-                result['roc_auc'],
-                result['accuracy'],
-                result['recall'],
-                result['precision'],
-                result['f1_score'],
-                result['execution_time'],
-                "dirty-dirty",
-            ),
-        )
+        cursor.execute(**get_classification_experiment_insertion_query(result))
         conn.commit()
-        logger.info(f"Experiment {experiment_id} for dataset {result['dataset']} saved to database.")
+        logger.info(f"Experiment for dataset {result['dataset']} saved to database.")
     except Exception as e:
         conn.rollback()  # Rollback in case of error
         logger.error(f"Error processing this result configuration: {result}: {e}")
 
 
 def run_classification_experiments_on_CleanML():
-    logger = configure_logging()
     MAX_SAMPLES_INFERENCE = int(1e4)  # TabPFN's limit is 10K data samples
 
     for dataset_config in classification_dataset_configs:
@@ -74,8 +90,8 @@ def run_classification_experiments_on_CleanML():
         logger.info(f"Starting inference on {len(X_test)} samples in batches of {MAX_SAMPLES_INFERENCE}.")
         for i in range(0, len(X_test), MAX_SAMPLES_INFERENCE):
             batch = X_test[i:i + MAX_SAMPLES_INFERENCE]
-            # batch_probabilities = clf.predict_proba(batch)
-            batch_probabilities = np.random.randn(len(batch), 2)
+            batch_probabilities = clf.predict_proba(batch)
+            # batch_probabilities = np.random.randn(len(batch), 2)
 
             if prediction_probabilities is None:
                 prediction_probabilities = np.array(batch_probabilities)
