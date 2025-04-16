@@ -3,6 +3,7 @@ import json # For storing embeddings
 import uuid
 import os
 from load_cleanML_dataset import load_dataset, extract_embeddings
+from load_cleanML_dataset_improved import scan_for_clean_data
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -54,21 +55,20 @@ def run_experiment(dataset_configs):
     cursor.close()
     conn.close()
 
+def run_experiments2(dataset_configs):
+    for dataset in dataset_configs:
+        sources = scan_for_clean_data(dataset.get('name'))
+        print(type(sources))
+        for source in sources:
+            print(len(source)) # source contains 4 things: train, test, path, random seed
+            # print(type(source[2]))
+            print(source[2])
+        exit()
+        # print(type(sources))
+        # print(f"Datasets found: {sources}")
+        print()
+
 
 if __name__ == "__main__":
-    dataset_configs = [
-        {'name': 'Airbnb', 'task': 'classification', 'target_column': 'Rating'},
-        {'name': 'Citation', 'task': 'classification', 'target_column': 'CS'},
-        {'name': 'Company', 'task': 'classification', 'target_column': 'Sentiment'},
-        {'name': 'Credit', 'task': 'classification', 'target_column': 'SeriousDlqin2yrs'},
-        {'name': 'EEG', 'task': 'classification', 'target_column': 'Eye'},
-        # {'name': 'KDD', 'task': 'classification', 'target_column': 'is_exciting_20'}, # for some reason runs out of memory, so temporarily is commented out
-        {'name': 'Marketing', 'task': 'classification', 'target_column': 'Income'},
-        {'name': 'Movie', 'task': 'classification', 'target_column': 'genres'},
-        {'name': 'Restaurant', 'task': 'classification', 'target_column': 'priceRange'},
-        {'name': 'Sensor', 'task': 'classification', 'target_column': 'moteid'},
-        {'name': 'Titanic', 'task': 'classification', 'target_column': 'Survived'},
-        {'name': 'University', 'task': 'classification', 'target_column': 'expenses thous$'},
-        {'name': 'USCensus', 'task': 'classification', 'target_column': 'Income'},
-    ]
-    run_experiment(dataset_configs)
+    from cleanML_dataset_configs import classification_dataset_configs
+    run_experiments2(classification_dataset_configs)
