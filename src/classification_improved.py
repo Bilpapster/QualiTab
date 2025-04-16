@@ -1,5 +1,4 @@
 import time
-from datetime import timedelta
 import numpy as np
 from tabpfn import TabPFNClassifier
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_score, recall_score
@@ -29,8 +28,8 @@ for dataset_config in classification_dataset_configs:
     logger.info(f"Starting inference on {len(X_test)} samples in batches of {MAX_SAMPLES_INFERENCE}.")
     for i in range(0, len(X_test), MAX_SAMPLES_INFERENCE):
         batch = X_test[i:i + MAX_SAMPLES_INFERENCE]
-        # batch_probabilities = clf.predict_proba(batch)
-        batch_probabilities = np.random.randn(len(batch), 2)
+        batch_probabilities = clf.predict_proba(batch)
+        # batch_probabilities = np.random.randn(len(batch), 2)
 
         if prediction_probabilities is None:
             prediction_probabilities = np.array(batch_probabilities)
@@ -53,8 +52,9 @@ for dataset_config in classification_dataset_configs:
         'recall': recall_score(y_test, predictions, average="binary", pos_label=classes[1]),
         'precision': precision_score(y_test, predictions, average="binary", pos_label=classes[1]),
         'f1_score': f1_score(y_test, predictions, average="binary", pos_label=classes[1]),
-        'execution_time': timedelta(seconds=(time.time() - start_time)),
+        'execution_time': time.time() - start_time,
     }
-    logger.info(f"Dataset finished. Execution time: {timedelta(seconds=result.get('execution_time'))}")
+    logger.info(f"Dataset finished. Execution time: {result['execution_time']} seconds.")
     print(result)
+    print()
 
