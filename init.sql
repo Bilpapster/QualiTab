@@ -16,4 +16,22 @@ BEGIN
             embeddings JSONB
         );
     END IF;
+
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_tables WHERE tablename = 'classification_experiments') THEN
+        CREATE TABLE classification_experiments (
+            experiment_id UUID PRIMARY KEY,
+            dataset_name VARCHAR(255) NOT NULL,
+            train_size INTEGER NOT NULL,
+            test_size INTEGER NOT NULL,
+            used_default_split BOOLEAN,
+            random_seed INTEGER,
+            roc_auc DOUBLE PRECISION,
+            accuracy DOUBLE PRECISION,
+            recall DOUBLE PRECISION,
+            precision DOUBLE PRECISION,
+            f1_score DOUBLE PRECISION,
+            execution_time DOUBLE PRECISION,
+            tag VARCHAR(255)
+    );
+    END IF;
 END $$;
