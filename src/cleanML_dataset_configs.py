@@ -8,17 +8,17 @@ The dictionary is structured as follows:
 """
 
 classification_dataset_configs = [
-    {'name': 'Airbnb', 'task': 'classification', 'target_column': 'Rating', 'random_seed':260507},
-    # {'name': 'Citation', 'task': 'classification', 'target_column': 'CS', 'random_seed':260507}, # non-informative dataset; only one feature (plain text)
-    {'name': 'Company', 'task': 'classification', 'target_column': 'Sentiment', 'random_seed':260507},
-    {'name': 'Credit', 'task': 'classification', 'target_column': 'SeriousDlqin2yrs', 'random_seed':260507},
-    {'name': 'EEG', 'task': 'classification', 'target_column': 'Eye', 'random_seed':260507},
-    {'name': 'Marketing', 'task': 'classification', 'target_column': 'Income', 'random_seed':260507},
-    {'name': 'Movie', 'task': 'classification', 'target_column': 'genres', 'random_seed':260507},
-    {'name': 'Restaurant', 'task': 'classification', 'target_column': 'priceRange', 'random_seed':260507},
-    {'name': 'Sensor', 'task': 'classification', 'target_column': 'moteid', 'random_seed':260507},
-    {'name': 'Titanic', 'task': 'classification', 'target_column': 'Survived', 'random_seed':260507},
-    {'name': 'University', 'task': 'classification', 'target_column': 'expenses thous$', 'random_seed':260507},
-    {'name': 'USCensus', 'task': 'classification', 'target_column': 'Income', 'random_seed':260507},
-    {'name': 'KDD', 'task': 'classification', 'target_column': 'is_exciting_20', 'random_seed': 260507},
+    {'name': 'Airbnb', 'task': 'classification', 'target_column': 'Rating'},
+    # {'name': 'Citation', 'task': 'classification', 'target_column': 'CS'}, # non-informative dataset; only one feature (plain text)
+    {'name': 'Company', 'task': 'classification', 'target_column': 'Sentiment'},
+    {'name': 'Credit', 'task': 'classification', 'target_column': 'SeriousDlqin2yrs'},
+    {'name': 'EEG', 'task': 'classification', 'target_column': 'Eye'},
+    {'name': 'Marketing', 'task': 'classification', 'target_column': 'Income'},
+    {'name': 'Movie', 'task': 'classification', 'target_column': 'genres'},
+    {'name': 'Restaurant', 'task': 'classification', 'target_column': 'priceRange'},
+    {'name': 'Sensor', 'task': 'classification', 'target_column': 'moteid'},
+    {'name': 'Titanic', 'task': 'classification', 'target_column': 'Survived'},
+    {'name': 'University', 'task': 'classification', 'target_column': 'expenses thous$'},
+    {'name': 'USCensus', 'task': 'classification', 'target_column': 'Income'},
+    {'name': 'KDD', 'task': 'classification', 'target_column': 'is_exciting_20' },
 ]

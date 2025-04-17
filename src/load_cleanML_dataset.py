@@ -25,7 +25,7 @@ def prepare_data(train_data, test_data, target_column, random_seed):
     return X_train, y_train, X_test, y_test
 
 
-def load_dataset(dataset_config: dict, mode: str = 'default'):
+def load_dataset(dataset_config: dict, mode: str = 'default', random_seed: int = 42):
     """
     Loads train and test data for a given dataset based on the provided configuration.
     Handles cases where train/test split files are missing by performing a manual split.
@@ -37,12 +37,13 @@ def load_dataset(dataset_config: dict, mode: str = 'default'):
                                                the last column is used as the target.
             - 'train_test_ratio' (float, optional): The ratio for train/test split if manual split is needed.
                                                     Defaults to 0.7.
-            - 'random_seed' (int, optional): The random seed for reproducibility in manual split.
-                                            Defaults to 42. If `default` mode is used and a train/test split is found,
-                                            this value is ignored.
+
         mode (str): The mode for loading the dataset. Can be 'default' or 'force_manual_split'.
             `default` loads the dataset using the default train/test split if available, otherwise performs manual split.
             `force_manual_split` always performs a manual split regardless of the availability of default files.
+
+        random_seed (int): The random seed for reproducibility in manual split. Defaults to 42.
+                           If `default` mode is used and a train/test split is found, this value is ignored.
 
     Returns:
         tuple: A tuple containing:
