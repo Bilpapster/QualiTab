@@ -53,6 +53,7 @@ def connect_to_db() -> tuple:
     conn = psycopg2.connect(
         host=os.getenv("POSTRGES_HOST", "localhost"),
         user=os.getenv("POSTRGES_USER", "postgres"),
+        port=os.getenv("POSTGRES_MAPPED_PORT", "5432"),
         password=os.getenv("POSTRGES_PASSWORD", "postgres"),
         database=os.getenv("POSTRGES_DB", "postgres"),
     )
