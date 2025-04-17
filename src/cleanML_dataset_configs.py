@@ -9,7 +9,7 @@ The dictionary is structured as follows:
 
 classification_dataset_configs = [
     {'name': 'Airbnb', 'task': 'classification', 'target_column': 'Rating', 'random_seed':260507},
-    {'name': 'Citation', 'task': 'classification', 'target_column': 'CS', 'random_seed':260507},
+    # {'name': 'Citation', 'task': 'classification', 'target_column': 'CS', 'random_seed':260507}, # non-informative dataset; only one feature (plain text)
     {'name': 'Company', 'task': 'classification', 'target_column': 'Sentiment', 'random_seed':260507},
     {'name': 'Credit', 'task': 'classification', 'target_column': 'SeriousDlqin2yrs', 'random_seed':260507},
     {'name': 'EEG', 'task': 'classification', 'target_column': 'Eye', 'random_seed':260507},
