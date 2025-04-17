@@ -3,3 +3,6 @@ tabpfn-extensions[all] @ git+https://github.com/PriorLabs/tabpfn-extensions.git
 matplotlib==3.10.1
 seaborn==0.13.2
 pandas==2.2.3
+python-dotenv==1.1.0
+jenga==0.0.1a1
+openml==0.15.1

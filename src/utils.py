@@ -1,5 +1,5 @@
 import logging
-
+from dotenv import load_dotenv
 
 def configure_logging() -> logging.Logger:
     """
@@ -33,7 +33,6 @@ def get_seeds_from_env_or_else_default() -> list[int]:
     If the environment variable is not set, it returns a default list of seeds.
     """
     import os
-    from dotenv import load_dotenv
 
     load_dotenv()
     seeds_str = os.getenv('SEEDS', '100,200,300')
@@ -49,7 +48,6 @@ def connect_to_db() -> tuple:
     """
     import psycopg2
     import os
-    from dotenv import load_dotenv
 
     load_dotenv()
     conn = psycopg2.connect(
