@@ -10,7 +10,7 @@ from utils import configure_logging, connect_to_db
 logger = configure_logging()
 
 
-def get_classification_experiment_insertion_query(result: dict) -> dict:
+def classification_insertion_query(result: dict) -> dict:
    """
     Returns the SQL query for inserting classification experiment results into the database
     in the form of a dictionary that contains the query and the values to be inserted.
@@ -61,7 +61,7 @@ def write_classification_experiment_result_to_db(result: dict):
     """
     conn, cursor = connect_to_db()
     try:
-        cursor.execute(**get_classification_experiment_insertion_query(result))
+        cursor.execute(**classification_insertion_query(result))
         conn.commit()
         logger.info(f"Experiment for dataset {result['dataset']} saved to database.")
     except Exception as e:
@@ -76,7 +76,7 @@ def run_classification_experiments_on_CleanML():
         start_time = time.time()
         logger.info(f"Working on dataset {dataset_config['name']}.")
 
-        X_train, y_train, X_test, y_test, used_default_split, random_seed = load_dataset(dataset_config)
+        X_train, y_train, X_test, y_test, used_default_split, random_seed = load_dataset(dataset_config, mode='force_manual_split')
         logger.info(f"Data split to train and test set.")
 
         # Initialize a classifier

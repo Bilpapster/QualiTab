@@ -4,11 +4,28 @@ import logging
 from sklearn.model_selection import train_test_split
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(filename)s::%(funcName)s::%(lineno)d %(asctime)s - %(levelname)s - %(message)s - ')
+logging.basicConfig(level=logging.INFO,
+                    format='%(filename)s::%(funcName)s::%(lineno)d %(asctime)s - %(levelname)s - %(message)s - ')
 logger = logging.getLogger(__name__)
 
 
-def load_dataset(dataset_config):
+def prepare_data(train_data, test_data, target_column, random_seed):
+    """Prepares the data by separating features and target, and limiting samples."""
+    if target_column is None or target_column not in train_data.columns:
+        target_column = train_data.columns[-1]
+        logger.info(f"No or invalid target column specified. Using last column: {target_column}")
+
+    MAX_SAMPLES = int(1e4)
+    sampled_train = train_data.sample(n=min(MAX_SAMPLES, len(train_data)), replace=False, random_state=random_seed)
+
+    X_train = sampled_train.drop(columns=[target_column])
+    y_train = sampled_train[target_column]
+    X_test = test_data.drop(columns=[target_column])
+    y_test = test_data[target_column]
+    return X_train, y_train, X_test, y_test
+
+
+def load_dataset(dataset_config: dict, mode: str = 'default'):
     """
     Loads train and test data for a given dataset based on the provided configuration.
     Handles cases where train/test split files are missing by performing a manual split.
@@ -21,7 +38,11 @@ def load_dataset(dataset_config):
             - 'train_test_ratio' (float, optional): The ratio for train/test split if manual split is needed.
                                                     Defaults to 0.7.
             - 'random_seed' (int, optional): The random seed for reproducibility in manual split.
-                                            Defaults to 42.
+                                            Defaults to 42. If `default` mode is used and a train/test split is found,
+                                            this value is ignored.
+        mode (str): The mode for loading the dataset. Can be 'default' or 'force_manual_split'.
+            `default` loads the dataset using the default train/test split if available, otherwise performs manual split.
+            `force_manual_split` always performs a manual split regardless of the availability of default files.
 
     Returns:
         tuple: A tuple containing:
@@ -42,45 +63,30 @@ def load_dataset(dataset_config):
     if not os.path.exists(dataset_path):
         raise FileNotFoundError(f"Dataset directory not found: {dataset_path}")
 
-    train_file_path = os.path.join(dataset_path, 'dirty_train.csv')
-    test_file_path = os.path.join(dataset_path, 'dirty_test.csv')
     raw_file_path = os.path.join(dataset_path, 'raw.csv')
+    if not os.path.isfile(raw_file_path):
+        raise FileNotFoundError(f"Raw data file not found: {raw_file_path}")
 
-    if os.path.exists(train_file_path) and os.path.exists(test_file_path):
-        train_data = pd.read_csv(train_file_path)
-        test_data = pd.read_csv(test_file_path)
-        used_default_split = True
-        random_seed = None  # No random seed was used in this case
-    elif os.path.exists(raw_file_path):
-        logger.info(f"No default train/test split found for {dataset_name}. "
-                    f"Performing manual split with ratio {train_test_ratio} and seed {random_seed}.")
-        data = pd.read_csv(raw_file_path)
-        train_data, test_data = train_test_split(data, train_size=train_test_ratio, random_state=random_seed)
-        used_default_split = False
-    else:
-        raise FileNotFoundError(f"Neither train/test files nor raw file found for {dataset_name}.")
+    if mode == 'default':
+        train_file_path = os.path.join(dataset_path, 'dirty_train.csv')
+        test_file_path = os.path.join(dataset_path, 'dirty_test.csv')
 
-    # Handle target column
-    if target_column is None or target_column not in train_data.columns:
-        if target_column is not None:
-            logger.warning(f"Specified target column '{target_column}' not found for dataset '{dataset_name}'. "
-                           f"Using the last column as target. Available columns {train_data.columns.values}")
-        else:
-            logger.info(f"No target column specified for dataset '{dataset_name}'. Using the last column as target.")
-        target_column = train_data.columns[-1]  # Use the last column
+        if os.path.exists(train_file_path) and os.path.exists(test_file_path):
+            train_data = pd.read_csv(train_file_path)
+            test_data = pd.read_csv(test_file_path)
+            used_default_split = True
+            random_seed = None  # No random seed was used in this case
+            X_train, y_train, X_test, y_test = prepare_data(train_data, test_data, target_column, random_seed)
+            return X_train, y_train, X_test, y_test, used_default_split, random_seed
+        elif os.path.exists(raw_file_path):
+            logger.info(f"No default train/test split found for {dataset_name}. "
+                        f"Performing manual split with ratio {train_test_ratio} and seed {random_seed}.")
 
-    logger.info(f"Target column set to: '{target_column}'")
-
-    X_train = train_data.drop(columns=[target_column])
-    y_train = train_data[target_column]
-    X_test = test_data.drop(columns=[target_column])
-    y_test = test_data[target_column]
-
-    MAX_SAMPLES = int(1e4) # TabPFN's limit is 10K data samples
-    # todo: now we take the first 10K points in case X_train contains more samples.
-    # todo: we should consider also the case to randomly sample 10K samples from the train set with random.choice().
-    X_train, y_train, X_test, y_test = X_train[:MAX_SAMPLES], y_train[:MAX_SAMPLES], X_test, y_test
-
+    # this part is reached if either mode is `force_manual_split` or default split was not found
+    data = pd.read_csv(raw_file_path)
+    train_data, test_data = train_test_split(data, train_size=train_test_ratio, random_state=random_seed)
+    used_default_split = False
+    X_train, y_train, X_test, y_test = prepare_data(train_data, test_data, target_column, random_seed)
     return X_train, y_train, X_test, y_test, used_default_split, random_seed
 
 
