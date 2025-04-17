@@ -8,7 +8,9 @@ class CleanML_classification_experiment(ClassificationExperiment):
         return load_dataset(dataset_config, mode='force_manual_split', random_seed=kwargs['random_seed'])
 
     def get_dataset_configs(self) -> list:
-        from src.cleanML_dataset_configs import classification_dataset_configs
+        import sys
+        sys.path.append('..')
+        from src.config import cleanML_dataset_configs
 
-        return classification_dataset_configs
+        return cleanML_dataset_configs
 

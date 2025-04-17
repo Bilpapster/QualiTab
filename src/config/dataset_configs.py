@@ -7,7 +7,7 @@ The dictionary is structured as follows:
 'random_seed': A random seed for reproducibility. The random seed is used for train/test splitting.
 """
 
-classification_dataset_configs = [
+cleanML_dataset_configs = [
     {'name': 'Airbnb', 'task': 'classification', 'target_column': 'Rating'},
     # {'name': 'Citation', 'task': 'classification', 'target_column': 'CS'}, # non-informative dataset; only one feature (plain text)
     {'name': 'Company', 'task': 'classification', 'target_column': 'Sentiment'},
@@ -21,4 +21,9 @@ classification_dataset_configs = [
     {'name': 'University', 'task': 'classification', 'target_column': 'expenses thous$'},
     {'name': 'USCensus', 'task': 'classification', 'target_column': 'Income'},
     {'name': 'KDD', 'task': 'classification', 'target_column': 'is_exciting_20' },
+]
+
+openML_dataset_configs = [
+    {'name': 'OpenML-CC18', 'task': 'classification', 'description': 'OpenML-CC18 benchmark'},
+    # {'name': '8f0ea660163b436bbd4abd49665c7b1d', 'task': 'regression', 'description': 'OpenML-CTR23 benchmark'},
 ]
