@@ -11,45 +11,43 @@ logger = configure_logging()
 
 
 def classification_insertion_query(result: dict) -> dict:
-   """
-    Returns the SQL query for inserting classification experiment results into the database
-    in the form of a dictionary that contains the query and the values to be inserted.
-   """
-   return {
-       'query': """
-            INSERT INTO classification_experiments (
-                experiment_id,
-                dataset_name,
-                train_size,
-                test_size,
-                used_default_split,
-                random_seed,
-                roc_auc,
-                accuracy,
-                recall,
-                precision,
-                f1_score,
-                execution_time,
-                tag
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """,
-       'vars': (
-           str(uuid.uuid4()),
-           result['dataset'],
-           result['train_size'],
-           result['test_size'],
-           result['used_default_split'],
-           result['random_seed'],
-           result['roc_auc'],
-           result['accuracy'],
-           result['recall'],
-           result['precision'],
-           result['f1_score'],
-           result['execution_time'],
-           "dirty-dirty",
-       ),
-   }
+    """
+     Returns the SQL query for inserting classification experiment results into the database
+     in the form of a dictionary that contains the query and the values to be inserted.
+    """
+    return {
+        'query': """
+                 INSERT INTO classification_experiments (experiment_id,
+                                                         dataset_name,
+                                                         train_size,
+                                                         test_size,
+                                                         used_default_split,
+                                                         random_seed,
+                                                         roc_auc,
+                                                         accuracy,
+                                                         recall,
+                                                         precision,
+                                                         f1_score,
+                                                         execution_time,
+                                                         tag)
+                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 """,
+        'vars': (
+            str(uuid.uuid4()),
+            result['dataset'],
+            result['train_size'],
+            result['test_size'],
+            result['used_default_split'],
+            result['random_seed'],
+            result['roc_auc'],
+            result['accuracy'],
+            result['recall'],
+            result['precision'],
+            result['f1_score'],
+            result['execution_time'],
+            "dirty-dirty",
+        ),
+    }
 
 
 def write_classification_experiment_result_to_db(result: dict):
@@ -77,7 +75,9 @@ def run_classification_experiments_on_CleanML():
             start_time = time.time()
             logger.info(f"Working on dataset {dataset_config['name']} with random seed {random_seed}.")
 
-            X_train, y_train, X_test, y_test, used_default_split, random_seed = load_dataset(dataset_config, mode='force_manual_split')
+            X_train, y_train, X_test, y_test, used_default_split, random_seed = load_dataset(dataset_config,
+                                                                                             mode='force_manual_split',
+                                                                                             random_seed=random_seed)
             logger.info(f"Data split to train and test set.")
 
             # Initialize a classifier
@@ -110,7 +110,8 @@ def run_classification_experiments_on_CleanML():
                 'test_size': len(X_test),
                 'used_default_split': used_default_split,
                 'random_seed': random_seed,
-                'roc_auc': roc_auc_score(y_test, prediction_probabilities[:, 1]), # Caution: only for binary classification!
+                'roc_auc': roc_auc_score(y_test, prediction_probabilities[:, 1]),
+                # Caution: only for binary classification!
                 'accuracy': accuracy_score(y_test, predictions),
                 'recall': recall_score(y_test, predictions, average="binary", pos_label=classes[1]),
                 'precision': precision_score(y_test, predictions, average="binary", pos_label=classes[1]),

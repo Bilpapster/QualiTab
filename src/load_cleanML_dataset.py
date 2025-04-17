@@ -57,7 +57,6 @@ def load_dataset(dataset_config: dict, mode: str = 'default', random_seed: int =
     dataset_name = dataset_config['name']
     target_column = dataset_config.get('target_column')
     train_test_ratio = dataset_config.get('train_test_ratio', 0.7)
-    random_seed = dataset_config.get('random_seed', 42)
 
     dataset_path = os.path.join(os.pardir, 'CleanML', 'datasets', 'data', dataset_name, 'raw')
 
