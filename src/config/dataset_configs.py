@@ -25,5 +25,5 @@ cleanML_dataset_configs = [
 
 openML_dataset_configs = [
     {'name': 'OpenML-CC18', 'task': 'classification', 'description': 'OpenML-CC18 benchmark'},
-    # {'name': '8f0ea660163b436bbd4abd49665c7b1d', 'task': 'regression', 'description': 'OpenML-CTR23 benchmark'},
+    {'name': '8f0ea660163b436bbd4abd49665c7b1d', 'task': 'regression', 'description': 'OpenML-CTR23 benchmark'},
 ]
