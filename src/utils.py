@@ -1,5 +1,12 @@
 import logging
 from dotenv import load_dotenv
+import openml
+import sys
+import numpy as np
+
+sys.path.append('../')
+from src.config import TABPFN_MAX_SAMPLES, TABPFN_MAX_FEATURES, TABPFN_MAX_CLASSES, openML_dataset_configs
+
 
 def configure_logging() -> logging.Logger:
     """
@@ -14,7 +21,7 @@ def configure_logging() -> logging.Logger:
     """
     logging.basicConfig(
         level=logging.INFO,
-        format='%(filename)s::%(funcName)s::%(lineno)d %(asctime)s - %(levelname)s - %(message)s - '
+        format='%(asctime)s - %(levelname)s - %(message)s - '
     )
     return logging.getLogger(__name__)
 
@@ -58,3 +65,39 @@ def connect_to_db() -> tuple:
         database=os.getenv("POSTRGES_DB", "postgres"),
     )
     return conn, conn.cursor()
+
+
+def print_openML_report_wrt_tabpfn_limits():
+    benchmark_configs = openML_dataset_configs
+    for benchmark_config in benchmark_configs:
+        benchmark_suite = openml.study.get_suite(benchmark_config['name'])
+        nof_tasks = len(benchmark_suite.tasks)
+        nof_datasets_with_too_many_samples = 0
+        nof_datasets_with_too_many_train_samples = 0 # assuming train size is 70% of the dataset
+        nof_datasets_with_too_many_test_samples = 0 # assuming test size is 30% of the dataset
+        nof_datasets_with_too_many_features = 0
+        nof_datasets_with_too_many_targets = 0
+
+        print(f"--------- BENCHMARK SUITE {benchmark_config['description']} ---------")
+        for task_id in benchmark_suite.tasks:
+            task = openml.tasks.get_task(task_id)
+            features, targets = task.get_X_and_y(dataset_format='dataframe')
+            if len(features) > TABPFN_MAX_SAMPLES:
+                nof_datasets_with_too_many_samples += 1
+            if len(features) * 0.7 > TABPFN_MAX_SAMPLES:
+                nof_datasets_with_too_many_train_samples += 1
+            if len(features) * 0.3 > TABPFN_MAX_SAMPLES:
+                nof_datasets_with_too_many_test_samples += 1
+            if len(features.columns) > TABPFN_MAX_FEATURES:
+                nof_datasets_with_too_many_features += 1
+            if benchmark_config['task'] == 'classification' and len(set(targets)) > TABPFN_MAX_CLASSES:
+                nof_datasets_with_too_many_targets += 1
+
+        print(f"\tTasks: {nof_tasks:20}")
+        print(f"\tToo many samples: {nof_datasets_with_too_many_samples:9} ({nof_datasets_with_too_many_samples / nof_tasks:.2%})")
+        print(f"\tToo many train samples: {nof_datasets_with_too_many_train_samples:3} ({nof_datasets_with_too_many_train_samples / nof_tasks:.2%})")
+        print(f"\tToo many test samples: {nof_datasets_with_too_many_test_samples:4} ({nof_datasets_with_too_many_test_samples / nof_tasks:.2%})")
+        print(f"\tToo many features: {nof_datasets_with_too_many_features:8} ({nof_datasets_with_too_many_features / nof_tasks:.2%})")
+        if benchmark_config['task'] == 'classification':
+            print(f"\tToo many targets: {nof_datasets_with_too_many_targets:9} ({nof_datasets_with_too_many_targets / nof_tasks:.2%})")
+        print()
