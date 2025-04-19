@@ -41,7 +41,7 @@ class ClassificationExperiment(Experiment):
                 result['precision'],
                 result['f1_score'],
                 result['execution_time'],
-                "dirty-dirty",
+                result['tag'],
             ),
         }
 
@@ -99,6 +99,7 @@ class ClassificationExperiment(Experiment):
                     'precision': precision_score(y_test, predictions, average="binary", pos_label=classes[1]),
                     'f1_score': f1_score(y_test, predictions, average="binary", pos_label=classes[1]),
                     'execution_time': time.time() - start_time,
+                    'tag': 'dirty-dirty'
                 }
                 logger.info(f"Dataset finished. Execution time: {result['execution_time']} seconds.")
                 self.write_experiment_result_to_db(result)

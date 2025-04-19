@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from tabpfn import TabPFNClassifier, TabPFNRegressor
+import sys
 
-from utils import configure_logging, connect_to_db
+sys.path.append('..')
+
+from src.utils import configure_logging, connect_to_db, get_seeds_from_env_or_else_default
 
 
 class Experiment(ABC):
@@ -68,7 +71,6 @@ class Experiment(ABC):
 
     @staticmethod
     def get_random_seeds() -> list:
-        from utils import get_seeds_from_env_or_else_default
         return get_seeds_from_env_or_else_default()
 
     @abstractmethod
