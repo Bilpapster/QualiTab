@@ -39,13 +39,17 @@ class Experiment(ABC):
         pass
 
     def _check_nof_features(self) -> None:
+        """
+        Checks the number of features in the dataset against the maximum allowed by TabPFN.
+        If the number of features exceeds the maximum, it randomly samples a subset of features.
+        The sampling is done using the same random seed for reproducibility.
+        """
         if len(self.features.columns) <= TABPFN_MAX_FEATURES:
             """If the number of features is smaller than or equal to the maximum allowed by TabPFN, do nothing."""
             return
 
         """If the number of features in the dataset is larger than the maximum number of features,
-        randomly sample a subset of the max allowed number of features from the original features.
-        Important: The same random seed is used for reproducibility."""
+        randomly sample a subset of the max allowed number of features from the original features."""
         self.logger.info(
             f"The features ({len(self.features.columns)}) exceed the maximum allowed ({TABPFN_MAX_FEATURES}). "
             f"Sampling {TABPFN_MAX_FEATURES} features using seed {self.random_seed}."
@@ -56,12 +60,20 @@ class Experiment(ABC):
         )
 
     def _get_total_data(self) -> pd.DataFrame:
+        """
+        Returns the total data (features and targets) as a DataFrame.
+        Raises ValueError if features or targets are not set.
+        """
         if self.features is None or self.targets is None:
             raise ValueError("Features and targets must be set before getting total data.")
 
         return pd.concat([self.features, self.targets], axis=1)
 
     def _get_train_data(self) -> pd.DataFrame:
+        """
+        Returns the training data (features and targets) as a DataFrame.
+        Raises ValueError if `X_train` and/or `y_train` is not set.
+        """
         if self.X_train is None or self.y_train is None:
             raise ValueError("Training data must be set before getting train data.")
 
@@ -82,14 +94,18 @@ class Experiment(ABC):
         self.y_train = train_data[self.target_name]
 
     def _check_nof_classes(self) -> None:
+        """
+        Checks the number of classes in the dataset against the maximum allowed by TabPFN.
+        If the number of classes exceeds the maximum, it randomly samples a subset of classes.
+        The sampling is done using the same random seed for reproducibility.
+        """
         classes = set(self.targets)
         if len(classes) <= TABPFN_MAX_CLASSES:
             """If the number of classes is smaller than or equal to the maximum allowed for TabPFN, do nothing."""
             return
 
         """If the number of classes is larger than the maximum allowed for TabPFN,
-        randomly sample a subset of the max allowed number of classes from the original classes.
-        Important: The same random seed is used for reproducibility."""
+        randomly sample a subset of the max allowed number of classes from the original classes."""
         self.logger.info(
             f"The number of classes ({len(classes)}) exceed the maximum allowed ({TABPFN_MAX_CLASSES}). "
             f"Sampling {TABPFN_MAX_CLASSES} classes (keeping all their samples) using seed {self.random_seed}."
@@ -101,13 +117,17 @@ class Experiment(ABC):
         self._update_features_and_targets_from_data(data)
 
     def _check_nof_samples(self) -> None:
+        """
+        Checks the number of samples in the training dataset against the maximum allowed by TabPFN.
+        If the number of samples exceeds the maximum, it randomly samples a subset of samples.
+        The sampling is done using the same random seed for reproducibility.
+        """
         if len(self.X_train) <= TABPFN_MAX_SAMPLES:
             """If the number of train samples is smaller than or equal to the maximum number of samples, do nothing."""
             return
 
         """If the number of train samples is larger than the maximum allowed for TabPFN,
-        randomly sample a subset of the max allowed number of samples from the original samples.
-        Important: The same random seed is used for reproducibility."""
+        randomly sample a subset of the max allowed number of samples from the original samples."""
         self.logger.info(
             f"The training samples ({len(self.X_train)}) exceed the maximum allowed ({TABPFN_MAX_SAMPLES}). "
             f"Sampling {TABPFN_MAX_SAMPLES} samples using seed {self.random_seed}."
@@ -117,12 +137,22 @@ class Experiment(ABC):
         self._update_X_y_train_from_train_data(train_data)
 
     def _perform_train_test_split(self) -> None:
+        """
+        Splits the dataset into training and testing sets using the specified test size and random seed.
+        If you plan to fit a TabPFN model, consider using `_check_nof_samples` before fitting the model.
+        """
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.features, self.targets,
             test_size=self.test_size, random_state=self.random_seed
         )
 
     def prepare_data(self):
+        """
+        Prepares the data for training and testing.
+
+        Raises:
+            ValueError: If features, targets, random seed, test size, or target name are not set.
+        """
         if self.features is None or self.targets is None:
             raise ValueError("Features and targets must be set before preparing data.")
 
