@@ -26,12 +26,22 @@ def configure_logging() -> logging.Logger:
     return logging.getLogger(__name__)
 
 
-def parse_random_seeds_list(s):
+def parse_comma_separated_integers(s):
     """
     Converts a comma-separated string of integers into a list of ints.
     Example: "100,200,300..." -> [100, 200, 300, ...]
     """
+    if s.strip() == "":
+        return []
     return [int(x.strip()) for x in s.strip().split(',')]
+
+
+def get_finished_datasets_from_env_or_else_empty() -> set[int]:
+    import os
+
+    load_dotenv()
+    finished_datasets_str = os.getenv('FINISHED_DATASETS', "")
+    return set(parse_comma_separated_integers(finished_datasets_str))
 
 
 def get_seeds_from_env_or_else_default() -> list[int]:
@@ -43,7 +53,7 @@ def get_seeds_from_env_or_else_default() -> list[int]:
 
     load_dotenv()
     seeds_str = os.getenv('SEEDS', '100,200,300')
-    return parse_random_seeds_list(seeds_str)
+    return parse_comma_separated_integers(seeds_str)
 
 
 def connect_to_db() -> tuple:
