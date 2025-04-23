@@ -3,7 +3,7 @@ import openml, sys, pandas as pd, numpy as np, time, random
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_score, recall_score
 
 sys.path.append("..")
-from src.utils import configure_logging, get_seeds_from_env_or_else_default
+from src.utils import configure_logging, get_seeds_from_env_or_else_default, get_finished_datasets_from_env_or_else_empty
 from src.config import TABPFN_MAX_SAMPLES, TABPFN_MAX_FEATURES, TABPFN_MAX_CLASSES
 from sklearn.model_selection import train_test_split
 
@@ -80,6 +80,7 @@ class OpenML_classification_experiment(ClassificationExperiment):
     def run(self):
         logger = configure_logging()
         seeds = get_seeds_from_env_or_else_default()
+        finished_datasets = get_finished_datasets_from_env_or_else_empty()
 
         benchmark_configs = self.get_dataset_configs()
         for benchmark_config in benchmark_configs:
@@ -90,31 +91,36 @@ class OpenML_classification_experiment(ClassificationExperiment):
             tasks = benchmark_suite.tasks
             i = 0
             for task_index, dataset_id in enumerate(tasks):
-                logger.info(f"---- DATASET ID {dataset_id} ({task_index} of {len(tasks)}) ----")
+                task = openml.tasks.get_task(dataset_id)
+                logger.info(f"---- DATASET ID {task.dataset_id} ({task_index} of {len(tasks)}) ----")
+                if task.dataset_id in finished_datasets:
+                    logger.info(f"Dataset {task.dataset_id} is already processed. Skipping.")
+                    continue
+
                 for seed_index, random_seed in enumerate(seeds):
                     logger.info(f"---- SEED {random_seed} ({seed_index} of {len(seeds)}) ----")
                     start_time = time.time()
 
-                    task = openml.tasks.get_task(dataset_id)
                     X_train, y_train, X_test, y_test, _, _ = self.load_dataset(task, random_seed=random_seed)
 
                     clf = self.get_model_from_dataset_config(benchmark_config)
                     try:
                         clf.fit(X_train, y_train)
                     except Exception as e:
-                        logger.error(f"Error fitting the model for dataset {dataset_id}: {e}")
+                        logger.error(f"Error fitting the model for dataset {task.dataset_id}: {e}")
                         continue
                     classes = clf.classes_
                     logger.info(f"TabPFN classifier fitted. The target classes are {classes}")
 
+                    LIMIT = TABPFN_MAX_SAMPLES if len(X_test.columns) < 400 else 5000
+                    logger.info(f"Starting inference on {len(X_test)} samples in batches of {LIMIT}.")
+
                     prediction_probabilities = None
-                    logger.info(f"Starting inference on {len(X_test)} samples in batches of {TABPFN_MAX_SAMPLES}.")
-                    for i in range(0, len(X_test), TABPFN_MAX_SAMPLES):
-                        batch = X_test[i:i + TABPFN_MAX_SAMPLES]
-                        # batch_probabilities = clf.predict_proba(batch)
-                        batch_probabilities = np.random.randn(len(batch), len(classes))
-                        batch_probabilities = np.exp(batch_probabilities) / np.sum(np.exp(batch_probabilities), axis=1,
-                                                                                   keepdims=True)
+                    for i in range(0, len(X_test), LIMIT):
+                        batch = X_test[i:i + LIMIT]
+                        batch_probabilities = clf.predict_proba(batch)
+                        # batch_probabilities = np.random.randn(len(batch), len(classes))
+                        # batch_probabilities = np.exp(batch_probabilities) / np.sum(np.exp(batch_probabilities), axis=1, keepdims=True)
 
                         if prediction_probabilities is None:
                             prediction_probabilities = np.array(batch_probabilities)
