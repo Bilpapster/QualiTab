@@ -233,4 +233,7 @@ class Experiment(ABC):
         Main method to run the experiment.
         Loads datasets, trains models, evaluates them, and writes results to the database.
         """
-        pass
+        # checking first for connection to the database
+        connect_to_db()
+        # you can add your own code overriding this method
+        # just make sure to call the super().run() method

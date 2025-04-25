@@ -67,14 +67,17 @@ def connect_to_db() -> tuple:
     import os
 
     load_dotenv()
-    conn = psycopg2.connect(
-        host=os.getenv("POSTRGES_HOST", "localhost"),
-        user=os.getenv("POSTRGES_USER", "postgres"),
-        port=os.getenv("POSTGRES_MAPPED_PORT", "5432"),
-        password=os.getenv("POSTRGES_PASSWORD", "postgres"),
-        database=os.getenv("POSTRGES_DB", "postgres"),
-    )
-    return conn, conn.cursor()
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv("POSTRGES_HOST", "localhost"),
+            user=os.getenv("POSTRGES_USER", "postgres"),
+            port=os.getenv("POSTGRES_MAPPED_PORT", "5432"),
+            password=os.getenv("POSTRGES_PASSWORD", "postgres"),
+            database=os.getenv("POSTRGES_DB", "postgres"),
+        )
+        return conn, conn.cursor()
+    except psycopg2.OperationalError:
+        raise "Error connecting to the database. Please check your connection settings."
 
 
 def print_openML_report_wrt_tabpfn_limits():
