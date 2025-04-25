@@ -4,7 +4,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_s
 
 sys.path.append("..")
 from src.utils import configure_logging, get_seeds_from_env_or_else_default, get_finished_datasets_from_env_or_else_empty
-from src.config import TABPFN_MAX_SAMPLES, TABPFN_MAX_FEATURES, TABPFN_MAX_CLASSES
+from src.config import TABPFN_MAX_SAMPLES, TABPFN_MAX_FEATURES, TABPFN_MAX_CLASSES, get_dynamic_inference_limit
 from sklearn.model_selection import train_test_split
 
 
@@ -112,7 +112,7 @@ class OpenML_classification_experiment(ClassificationExperiment):
                     classes = clf.classes_
                     logger.info(f"TabPFN classifier fitted. The target classes are {classes}")
 
-                    LIMIT = TABPFN_MAX_SAMPLES if len(X_test.columns) < 400 else 5000
+                    LIMIT = get_dynamic_inference_limit(len(X_train), len(X_train.columns), len(classes))
                     logger.info(f"Starting inference on {len(X_test)} samples in batches of {LIMIT}.")
 
                     prediction_probabilities = None

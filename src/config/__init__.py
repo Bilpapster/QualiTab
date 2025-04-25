@@ -3,4 +3,5 @@ from .tabpfn_configs import (
     TABPFN_MAX_SAMPLES,
     TABPFN_MAX_FEATURES,
     TABPFN_MAX_CLASSES,
+    get_dynamic_inference_limit,
 )
