@@ -6,7 +6,6 @@ services:
       - postgres
     volumes:
       - ./src:/app/src
-      - ./CleanML:/app/
     env_file:
       - .env
     tty: true
