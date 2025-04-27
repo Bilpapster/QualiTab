@@ -22,6 +22,9 @@ class Experiment(ABC):
         self.random_seed = None  # the random seed to use when splitting or sampling the dataset
         self.test_size = None  # the size of the test set to use when splitting the dataset
         self.target_name = None  # the name of the target column in the dataset
+        self.model = None # the model to use for training, inference, embeddings, or data generation
+
+        self._prefix = '--' # the prefix to use for indentation in the logs
 
         self.features = None  # the features of the dataset, aka X (`X_train` and `X_test` together)
         self.targets = None  # the targets of the dataset, aka y (`y_train` and `y_test` together)
@@ -29,6 +32,20 @@ class Experiment(ABC):
         self.y_train = None  # the training targets
         self.X_test = None  # the test features
         self.y_test = None  # the test targets
+
+    def nest_prefix(self):
+        """
+        Adds a prefix to the logger messages for better readability.
+        Should be called right before a new loop or nested block begins
+        """
+        self._prefix += '----'
+
+    def unnest_prefix(self):
+        """
+        Removes the last prefix added by `nest_prefix`.
+        Should be called right after a loop or nested block ends.
+        """
+        self._prefix = self._prefix[:-4]
 
     @abstractmethod
     def insertion_query(self, result: dict) -> dict:
@@ -51,8 +68,8 @@ class Experiment(ABC):
         """If the number of features in the dataset is larger than the maximum number of features,
         randomly sample a subset of the max allowed number of features from the original features."""
         self.logger.info(
-            f"The features ({len(self.features.columns)}) exceed the maximum allowed ({TABPFN_MAX_FEATURES}). "
-            f"Sampling {TABPFN_MAX_FEATURES} features using seed {self.random_seed}."
+            f"{self._prefix} The features ({len(self.features.columns)}) exceed the maximum allowed ({TABPFN_MAX_FEATURES}). "
+            f"{self._prefix} Sampling {TABPFN_MAX_FEATURES} features using seed {self.random_seed}."
         )
         self.features = self.features.sample(
             n=TABPFN_MAX_FEATURES, replace=False,
@@ -107,11 +124,11 @@ class Experiment(ABC):
         """If the number of classes is larger than the maximum allowed for TabPFN,
         randomly sample a subset of the max allowed number of classes from the original classes."""
         self.logger.info(
-            f"The number of classes ({len(classes)}) exceed the maximum allowed ({TABPFN_MAX_CLASSES}). "
-            f"Sampling {TABPFN_MAX_CLASSES} classes (keeping all their samples) using seed {self.random_seed}."
+            f"{self._prefix} The number of classes ({len(classes)}) exceed the maximum allowed ({TABPFN_MAX_CLASSES}). "
+            f"{self._prefix} Sampling {TABPFN_MAX_CLASSES} classes (keeping all their samples) using seed {self.random_seed}."
         )
         classes_to_preserve = random.sample(classes, TABPFN_MAX_CLASSES)
-        self.logger.info(f"Selected classes: {classes_to_preserve}")
+        self.logger.info(f"{self._prefix} Selected classes: {classes_to_preserve}")
         data = self._get_total_data()
         data = data[data[self.target_name].isin(classes_to_preserve)]
         self._update_features_and_targets_from_data(data)
@@ -129,8 +146,8 @@ class Experiment(ABC):
         """If the number of train samples is larger than the maximum allowed for TabPFN,
         randomly sample a subset of the max allowed number of samples from the original samples."""
         self.logger.info(
-            f"The training samples ({len(self.X_train)}) exceed the maximum allowed ({TABPFN_MAX_SAMPLES}). "
-            f"Sampling {TABPFN_MAX_SAMPLES} samples using seed {self.random_seed}."
+            f"{self._prefix} The training samples ({len(self.X_train)}) exceed the maximum allowed ({TABPFN_MAX_SAMPLES}). "
+            f"{self._prefix} Sampling {TABPFN_MAX_SAMPLES} samples using seed {self.random_seed}."
         )
         train_data = self._get_train_data().sample(n=TABPFN_MAX_SAMPLES, replace=False,
                                                    random_state=self.random_seed, axis=0)
@@ -178,14 +195,13 @@ class Experiment(ABC):
         and logs the success or failure of the operation.
         """
         conn, cursor = connect_to_db()
-        logger = configure_logging()
         try:
             cursor.execute(**self.insertion_query(result))
             conn.commit()
-            logger.info(f"Experiment for {self.get_dataset_name_from_result(result)} saved to db.")
+            self.logger.info(f"{self._prefix} Experiment for {self.get_dataset_name_from_result(result)} saved to db.")
         except Exception as e:
             conn.rollback()  # Rollback in case of error
-            logger.error(f"Error processing this result configuration: {result}: {e}")
+            self.logger.error(f"{self._prefix} Error processing this result configuration: {result}: {e}")
 
     @staticmethod
     def get_dataset_name_from_result(result: dict) -> str:
@@ -213,13 +229,6 @@ class Experiment(ABC):
         """
         Loads the dataset based on the provided configuration.
         Returns a tuple of (X_train, y_train, X_test, y_test, used_default_split, random_seed).
-        """
-        pass
-
-    @abstractmethod
-    def get_dataset_configs(self) -> list:
-        """
-        Returns a list of dataset configurations.
         """
         pass
 

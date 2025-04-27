@@ -7,11 +7,11 @@ from .Experiment import Experiment
 class OpenMLExperiment(Experiment, ABC):
     def __init__(
             self,
-            benchmark_configurations: dict = None,
+            benchmark_configs: dict = None,
             random_seeds: list = None,
     ):
         super().__init__()
-        self.benchmark_configurations = benchmark_configurations
+        self.benchmark_configs = benchmark_configs
         self.random_seeds = random_seeds
         self.task = None
 
@@ -29,10 +29,12 @@ class OpenMLExperiment(Experiment, ABC):
 
         self.target_name = self.task.target_name
         self.features, self.targets = self.task.get_X_and_y(dataset_format='dataframe')
+        self.target_name = self.task.target_name
+        self.test_size = dataset_config.get("test_size", 0.3)
         self.prepare_data()
 
     def run(self):
-        if self.benchmark_configurations is None:
+        if self.benchmark_configs is None:
             raise ValueError("Benchmark configurations must be provided before running experiments.")
 
         if self.random_seeds is None:
@@ -40,24 +42,34 @@ class OpenMLExperiment(Experiment, ABC):
 
         super().run() # makes sure any preparatory checks (e.g., connection to db) are done
 
-        for benchmark_config in self.benchmark_configurations:
+        for benchmark_config in self.benchmark_configs:
             benchmark_suite = openml.study.get_suite(benchmark_config["name"])
             tasks = benchmark_suite.tasks
-            datasets_to_skip = benchmark_config["datasets_to_skip"]
+            datasets_to_skip = benchmark_config.get("datasets_to_skip", [])
 
+            self.logger.info(f"{self._prefix} Working on benchmark {benchmark_config.get('description', 'unknown')}")
+
+            self.nest_prefix()
             for task_index, dataset_id in enumerate(tasks):
-                # important dataset_id can be different from task.dataset_id
-                # using dataset_id only to get task and task.dataset_id thereafter for consistency
+                # IMPORTANT: dataset_id can sometimes be different from task.dataset_id (OpenML's flaw).
+                # We use dataset_id only to get the task object from OpenML.
+                # Thereafter, we use task.dataset_id wherever dataset id is needed for consistency.
                 self.task = openml.tasks.get_task(dataset_id)
                 if self.task.dataset_id in datasets_to_skip:
                     continue
 
+                self.logger.info(f"{self._prefix} Working on dataset {self.task.dataset_id} ({task_index + 1}/{len(tasks)})")
+
+                self.nest_prefix()
                 for random_seed in self.random_seeds:
                     self.random_seed = random_seed
-                    self.load_dataset(dataset_id, random_state=random_seed)
+                    self.load_dataset(benchmark_config, random_state=random_seed)
+                    self.model = self.get_model_from_dataset_config(benchmark_config)
                     self.run_one_experiment(benchmark_config)
+                self.unnest_prefix()
+            self.unnest_prefix()
 
     @abstractmethod
     def run_one_experiment(self, benchmark_config=None):
-        # random seed and task can be found in instance attributes
+        # random seed, data split to X/y train/test and model can be found in instance attributes
         pass

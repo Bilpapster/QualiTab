@@ -1,2 +1,4 @@
 from .CleanMLClassificationExperiment import CleanML_classification_experiment
 from .OpenMLClassificationExperiment import OpenML_classification_experiment
+from .ClassificationExperimentImproved import ClassificationExperiment
+from .OpemMLClassificationExperimentImproved import OpenMLClassificationExperimentImproved
