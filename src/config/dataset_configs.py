@@ -6,6 +6,10 @@ The dictionary is structured as follows:
 'target_column': The target variable for the dataset.
 'random_seed': A random seed for reproducibility. The random seed is used for train/test splitting.
 """
+import sys
+sys.path.append("..")
+
+from src.utils import get_finished_datasets_from_env_or_else_empty
 
 cleanML_dataset_configs = [
     {'name': 'Airbnb', 'task': 'classification', 'target_column': 'Rating'},
@@ -24,6 +28,18 @@ cleanML_dataset_configs = [
 ]
 
 openML_dataset_configs = [
-    {'name': 'OpenML-CC18', 'task': 'classification', 'description': 'OpenML-CC18 benchmark'},
-    {'name': '8f0ea660163b436bbd4abd49665c7b1d', 'task': 'regression', 'description': 'OpenML-CTR23 benchmark'},
+    {
+        'name': 'OpenML-CC18',
+        'task': 'classification',
+        'description': 'OpenML-CC18 benchmark',
+        'test_size': 0.3,
+        'datasets_to_skip': get_finished_datasets_from_env_or_else_empty()
+    },
+    {
+        'name': '8f0ea660163b436bbd4abd49665c7b1d',
+        'task': 'regression',
+        'description': 'OpenML-CTR23 benchmark',
+        'test_size': 0.3,
+        'datasets_to_skip': get_finished_datasets_from_env_or_else_empty()
+    },
 ]
