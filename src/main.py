@@ -1,12 +1,14 @@
-from experiment import CleanML_classification_experiment, OpenML_classification_experiment, OpenMLClassificationExperimentImproved
+from experiment import OpenMLClassificationExperiment
 from config import openML_dataset_configs
-from utils import get_seeds_from_env_or_else_default
+from utils import (
+    get_seeds_from_env_or_else_default,
+    get_finished_datasets_from_env_or_else_empty
+)
 
 
 if __name__ == "__main__":
-    # CleanML_classification_experiment().run()
-    # OpenML_classification_experiment().run()
-    OpenMLClassificationExperimentImproved(
+    OpenMLClassificationExperiment(
         benchmark_configs=openML_dataset_configs,
-        random_seeds=get_seeds_from_env_or_else_default()
+        random_seeds=get_seeds_from_env_or_else_default(),
+        datasets_to_skip=get_finished_datasets_from_env_or_else_empty(),
     ).run()

@@ -1,11 +1,13 @@
 import logging
 from dotenv import load_dotenv
 import openml
-import sys
-import numpy as np
 
-sys.path.append('../')
-from src.config import TABPFN_MAX_SAMPLES, TABPFN_MAX_FEATURES, TABPFN_MAX_CLASSES, openML_dataset_configs
+from src.config import (
+    TABPFN_MAX_SAMPLES,
+    TABPFN_MAX_FEATURES,
+    TABPFN_MAX_CLASSES,
+    openML_dataset_configs
+)
 
 
 def configure_logging() -> logging.Logger:

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import openml
 
-from .Experiment import Experiment
+from . import Experiment
 
 
 class OpenMLExperiment(Experiment, ABC):
@@ -9,10 +9,12 @@ class OpenMLExperiment(Experiment, ABC):
             self,
             benchmark_configs: dict = None,
             random_seeds: list = None,
+            datasets_to_skip: list | set = []
     ):
         super().__init__()
         self.benchmark_configs = benchmark_configs
         self.random_seeds = random_seeds
+        self.datasets_to_skip = datasets_to_skip
         self.task = None
 
     def load_dataset(self, dataset_config: dict, **kwargs) -> None:

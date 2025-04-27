@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
-from tabpfn import TabPFNClassifier, TabPFNRegressor
-from sklearn.model_selection import train_test_split
-import sys, random, pandas as pd
+import random
+import pandas as pd
+import sys
 
 sys.path.append('..')
 
+from tabpfn import TabPFNClassifier, TabPFNRegressor
+from sklearn.model_selection import train_test_split
 from src.utils import configure_logging, connect_to_db, get_seeds_from_env_or_else_default
 from src.config import TABPFN_MAX_SAMPLES, TABPFN_MAX_FEATURES, TABPFN_MAX_CLASSES
 

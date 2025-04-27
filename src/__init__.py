@@ -1,4 +1,3 @@
-from experiment import CleanMLClassificationExperiment
 from utils import (
     configure_logging,
     connect_to_db,

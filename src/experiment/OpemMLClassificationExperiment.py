@@ -2,12 +2,12 @@ import numpy as np
 import time
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_score, recall_score
 
-from .ClassificationExperimentImproved import ClassificationExperiment
+from . import ClassificationExperiment
 from .OpenMLExperiment import OpenMLExperiment
 from src.config import ExperimentMode, get_adaptive_inference_limit
 
 
-class OpenMLClassificationExperimentImproved(ClassificationExperiment, OpenMLExperiment):
+class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment):
     """
     Class to run classification experiments with OpenML datasets.
     Inherits from ClassificationExperiment and OpenMLExperiment.
@@ -16,6 +16,7 @@ class OpenMLClassificationExperimentImproved(ClassificationExperiment, OpenMLExp
             self,
             benchmark_configs: dict = None,
             random_seeds: list = None,
+            datasets_to_skip: list | set = []
     ):
         """
         Initializes the OpenMLClassificationExperimentImproved class.
@@ -26,7 +27,8 @@ class OpenMLClassificationExperimentImproved(ClassificationExperiment, OpenMLExp
         OpenMLExperiment.__init__(
             self,
             benchmark_configs=benchmark_configs,
-            random_seeds=random_seeds
+            random_seeds=random_seeds,
+            datasets_to_skip=datasets_to_skip
         )
 
     def modes_iterator(self, dataset_config):

@@ -7,7 +7,7 @@ class ExperimentMode(Enum):
     means that the model is trained (fitted) on dirty data and the performance (inference) is
     measured on clean data.
     """
-    CLEAN_CLEAN = 1
-    CLEAN_DIRTY = 2
-    DIRTY_CLEAN = 3
-    DIRTY_DIRTY = 4
+    CLEAN_CLEAN = 'CLEAN_CLEAN'
+    CLEAN_DIRTY = 'CLEAN_DIRTY'
+    DIRTY_CLEAN = 'DIRTY_CLEAN'
+    DIRTY_DIRTY = 'DIRTY_DIRTY'
