@@ -8,7 +8,7 @@ sys.path.append('..')
 from tabpfn import TabPFNClassifier, TabPFNRegressor
 from sklearn.model_selection import train_test_split
 from src.utils import configure_logging, connect_to_db, get_seeds_from_env_or_else_default
-from src.config import TABPFN_MAX_SAMPLES, TABPFN_MAX_FEATURES, TABPFN_MAX_CLASSES
+from src.config import TABPFN_MAX_SAMPLES, TABPFN_MAX_FEATURES, TABPFN_MAX_CLASSES, ExperimentMode
 
 
 class Experiment(ABC):
@@ -248,3 +248,76 @@ class Experiment(ABC):
         connect_to_db()
         # you can add your own code overriding this method
         # just make sure to call the super().run() method
+
+
+    def modes_iterator(self, dataset_config):
+        """
+        Returns the experiment modes for the given dataset configuration.
+        If no experiment modes are specified, defaults to a list with CLEAN_CLEAN as only element.
+        """
+        experiment_modes = dataset_config.get('experiment_modes', [ExperimentMode.CLEAN_CLEAN])
+        for experiment_mode in experiment_modes:  # loop through the experiment modes found in configurations
+            if experiment_mode in ExperimentMode:  # emit the mode if it is valid (one of the enum values)
+                yield experiment_mode
+
+    def _pollute_data_based_on_mode(self, experiment_mode: ExperimentMode):
+        """
+        Pollutes the data based on the experiment mode.
+        Args:
+            experiment_mode (ExperimentMode): The mode of the experiment to run.
+        """
+        if self.random_seed is None:
+            raise ValueError("Random seed must be set before polluting data.")
+
+        match experiment_mode:
+            case ExperimentMode.CLEAN_CLEAN:
+                # No pollution needed for clean-clean mode
+                return
+            case ExperimentMode.CLEAN_DIRTY:
+                self.__X_test_original = self.X_test.copy()
+                self.__y_test_original = self.y_test.copy()
+                # todo pollute X_test, y_test
+                return
+            case ExperimentMode.DIRTY_CLEAN:
+                self.__X_train_original = self.X_train.copy()
+                self.__y_train_original = self.y_train.copy()
+                # todo pollute X_train, y_train
+                return
+            case ExperimentMode.DIRTY_DIRTY:
+                self.__X_test_original = self.X_test.copy()
+                self.__y_test_original = self.y_test.copy()
+                self.__X_train_original = self.X_train.copy()
+                self.__y_train_original = self.y_train.copy()
+                # todo pollute X_train, y_train, X_test, y_test
+                return
+
+    def _rollback_data_based_on_mode(self, experiment_mode: ExperimentMode):
+        match experiment_mode:
+            case ExperimentMode.CLEAN_CLEAN:
+                # No rollback needed for clean-clean mode
+                return
+            case ExperimentMode.CLEAN_DIRTY:
+                self.X_test = self.__X_test_original.copy()
+                self.__delattr__('__X_test_original')
+                self.y_test = self.__y_test_original.copy()
+                self.__delattr__('__y_test_original')
+                return
+            case ExperimentMode.DIRTY_CLEAN:
+                self.X_train = self.__X_train_original.copy()
+                self.__delattr__('__X_train_original')
+                self.y_train = self.__y_train_original.copy()
+                self.__delattr__('__y_train_original')
+                return
+            case ExperimentMode.DIRTY_DIRTY:
+                self.X_test = self.__X_test_original.copy()
+                self.__delattr__('__X_test_original')
+                self.y_test = self.__y_test_original.copy()
+                self.__delattr__('__y_test_original')
+                self.X_train = self.__X_train_original.copy()
+                self.__delattr__('__X_train_original')
+                self.y_train = self.__y_train_original.copy()
+                self.__delattr__('__y_train_original')
+                return
+            case _:
+                raise ValueError(f"Unknown experiment mode: {experiment_mode}. Cannot rollback data.")
+
