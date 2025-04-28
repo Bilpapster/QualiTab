@@ -6,7 +6,7 @@ from tabpfn_extensions.embedding import TabPFNEmbedding
 import uuid
 
 class EmbeddingsExperiment(Experiment, ABC):
-    def __init__(self, n_folds: int = 1):
+    def __init__(self, n_folds: int = 0):
         super().__init__()
         self.n_folds = n_folds
 
@@ -50,8 +50,8 @@ class EmbeddingsExperiment(Experiment, ABC):
     def get_model_from_dataset_config(self, dataset_config: dict):
         if dataset_config['task'] == 'classification':
             clf = TabPFNClassifier(n_estimators=1, random_state=self.random_seed)
-            return TabPFNEmbedding(tabpfn_clf=clf, n_fold=self.n_folds)
+            return TabPFNEmbedding(tabpfn_clf=clf) # todo in future version we can also use n_folds
 
         # if the task is other than classification, we fall back to regression
         reg = TabPFNRegressor(n_estimators=1, random_state=self.random_seed)
-        return TabPFNEmbedding(tabpfn_reg=reg, n_fold=self.n_folds)
+        return TabPFNEmbedding(tabpfn_reg=reg) # todo in future version we can also use n_folds
