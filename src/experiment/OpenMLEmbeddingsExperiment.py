@@ -56,6 +56,7 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
                 for i in range(0, len(self.X_test), limit):
                     batch = self.X_test[i:i + limit]
                     if self.debug:
+                        self.log(f"Running in debug mode. Generating random embeddings.")
                         batch_embeddings = np.random.randn(1, len(batch), 192)
                     else:
                         batch_embeddings = self.model.get_embeddings(

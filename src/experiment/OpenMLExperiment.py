@@ -46,7 +46,7 @@ class OpenMLExperiment(Experiment, ABC):
 
         for benchmark_config in self.benchmark_configs:
             benchmark_suite = openml.study.get_suite(benchmark_config["name"])
-            tasks = benchmark_suite.tasks
+            tasks = benchmark_suite.tasks.reverse()
             datasets_to_skip = benchmark_config.get("datasets_to_skip", [])
 
             self.log(f"Working on benchmark {benchmark_config.get('description', 'unknown')}")
