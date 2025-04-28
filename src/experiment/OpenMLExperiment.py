@@ -1,4 +1,5 @@
 import openml
+import random
 from abc import ABC, abstractmethod
 
 from . import Experiment
@@ -9,12 +10,12 @@ class OpenMLExperiment(Experiment, ABC):
             self,
             benchmark_configs: dict = None,
             random_seeds: list = None,
-            datasets_to_skip: list | set = []
+            finished_datasets: list | set = []
     ):
         super().__init__()
         self.benchmark_configs = benchmark_configs
         self.random_seeds = random_seeds
-        self.datasets_to_skip = datasets_to_skip
+        self.finished_datasets = finished_datasets
         self.task = None
 
     def load_dataset(self, dataset_config: dict, **kwargs) -> None:
@@ -46,8 +47,9 @@ class OpenMLExperiment(Experiment, ABC):
 
         for benchmark_config in self.benchmark_configs:
             benchmark_suite = openml.study.get_suite(benchmark_config["name"])
-            tasks = benchmark_suite.tasks.reverse()
-            datasets_to_skip = benchmark_config.get("datasets_to_skip", [])
+            tasks = benchmark_suite.tasks
+            random.shuffle(tasks) # shuffle tasks to overcome bottlenecks of GPU/CPU usage
+            datasets_to_skip = set(self.finished_datasets)
 
             self.log(f"Working on benchmark {benchmark_config.get('description', 'unknown')}")
 

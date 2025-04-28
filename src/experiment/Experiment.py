@@ -72,6 +72,30 @@ class Experiment(ABC):
         """
         pass
 
+    @abstractmethod
+    def finished_datasets_query(self) -> str:
+        """
+        Returns the SQL query for fetching finished datasets from the database.
+        """
+        pass
+
+    def get_finished_datasets(self) -> set | list:
+        """
+        Fetches the finished datasets from the database using the `finished_datasets_query`.
+        Returns a set of dataset IDs.
+        """
+        conn, cursor = connect_to_db()
+        try:
+            cursor.execute(self.finished_datasets_query())
+            result = cursor.fetchall()
+            return {self.extract_dataset_id_from_db_row(row) for row in result}
+        except Exception as e:
+            self.logger.error(f"{self._prefix} Error fetching finished datasets: {e}")
+            return set()
+
+    def extract_dataset_id_from_db_row(self, row: tuple) -> str | int:
+        return int(str(row[0]).split('-')[1])
+
     def _check_nof_features(self) -> None:
         """
         Checks the number of features in the dataset against the maximum allowed by TabPFN.

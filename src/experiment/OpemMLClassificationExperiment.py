@@ -15,7 +15,8 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
             self,
             benchmark_configs: dict = None,
             random_seeds: list = None,
-            datasets_to_skip: list | set = []
+            finished_datasets: list | set = None,
+            debug=False
     ):
         """
         Initializes the OpenMLClassificationExperimentImproved class.
@@ -27,8 +28,9 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
             self,
             benchmark_configs=benchmark_configs,
             random_seeds=random_seeds,
-            datasets_to_skip=datasets_to_skip
+            finished_datasets=finished_datasets if finished_datasets else self.get_finished_datasets()
         )
+        self.debug = debug
 
     def run_one_experiment(self, benchmark_config=None):
         self.log(f"Running experiment with random seed: {self.random_seed}")
@@ -57,9 +59,12 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
             self.nest_prefix()
             for i in range(0, len(self.X_test), limit):
                 batch = self.X_test[i:i + limit]
-                # batch_probabilities = self.model.predict_proba(batch)
-                batch_probabilities = np.random.randn(len(batch), len(classes))
-                batch_probabilities = np.exp(batch_probabilities) / np.sum(np.exp(batch_probabilities), axis=1, keepdims=True)
+                if self.debug:
+                    self.log(f"Running in debug mode. Generating random prediction probabilities.")
+                    batch_probabilities = np.random.randn(len(batch), len(classes))
+                    batch_probabilities = np.exp(batch_probabilities) / np.sum(np.exp(batch_probabilities), axis=1, keepdims=True)
+                else:
+                    batch_probabilities = self.model.predict_proba(batch)
 
                 if prediction_probabilities is None:
                     prediction_probabilities = np.array(batch_probabilities)

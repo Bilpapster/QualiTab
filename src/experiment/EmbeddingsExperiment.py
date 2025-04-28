@@ -55,3 +55,11 @@ class EmbeddingsExperiment(Experiment, ABC):
         # if the task is other than classification, we fall back to regression
         reg = TabPFNRegressor(n_estimators=1, random_state=self.random_seed)
         return TabPFNEmbedding(tabpfn_reg=reg) # todo in future version we can also use n_folds
+
+    def finished_datasets_query(self) -> str:
+        return """
+               SELECT DISTINCT dataset_name 
+               FROM embeddings_experiments 
+               GROUP BY dataset_name 
+               HAVING COUNT(*) >= 10
+        """
