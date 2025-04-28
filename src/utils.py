@@ -71,11 +71,11 @@ def connect_to_db() -> tuple:
     load_dotenv()
     try:
         conn = psycopg2.connect(
-            host=os.getenv("POSTRGES_HOST", "localhost"),
-            user=os.getenv("POSTRGES_USER", "postgres"),
+            host=os.getenv("POSTGRES_HOST", "localhost"),
+            user=os.getenv("POSTGRES_USER", "postgres"),
             port=os.getenv("POSTGRES_MAPPED_PORT", "5432"),
-            password=os.getenv("POSTRGES_PASSWORD", "postgres"),
-            database=os.getenv("POSTRGES_DB", "postgres"),
+            password=os.getenv("POSTGRES_PASSWORD", "postgres"),
+            database=os.getenv("POSTGRES_DB", "postgres"),
         )
         return conn, conn.cursor()
     except psycopg2.OperationalError:
