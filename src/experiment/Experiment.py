@@ -144,7 +144,7 @@ class Experiment(ABC):
             f"{self._prefix} The number of classes ({len(classes)}) exceed the maximum allowed ({TABPFN_MAX_CLASSES}). "
             f"{self._prefix} Sampling {TABPFN_MAX_CLASSES} classes (keeping all their samples) using seed {self.random_seed}."
         )
-        classes_to_preserve = random.sample(classes, TABPFN_MAX_CLASSES)
+        classes_to_preserve = random.sample(sorted(classes), TABPFN_MAX_CLASSES)
         self.logger.info(f"{self._prefix} Selected classes: {classes_to_preserve}")
         data = self._get_total_data()
         data = data[data[self.target_name].isin(classes_to_preserve)]
