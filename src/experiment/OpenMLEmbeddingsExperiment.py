@@ -1,10 +1,9 @@
-import numpy as np
-import time
 import json
-from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_score, recall_score
+import time
+import numpy as np
 
 from . import EmbeddingsExperiment, OpenMLExperiment
-from src.config import ExperimentMode, get_adaptive_inference_limit
+from src.config import get_adaptive_inference_limit
 
 
 class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
@@ -37,11 +36,11 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
         self.corrupted_rows = []
 
     def run_one_experiment(self, benchmark_config=None):
-        self.logger.info(f"{self._prefix} Running experiment with random seed: {self.random_seed}")
+        self.log(f"Running experiment with random seed: {self.random_seed}")
 
         self.nest_prefix()
         for experiment_mode in self.modes_iterator(benchmark_config):
-            self.logger.info(f"{self._prefix} Running experiment with mode: {experiment_mode}")
+            self.log(f"Running experiment with mode: {experiment_mode}")
             start_time = time.time()
             self._pollute_data_based_on_mode(experiment_mode)
 
@@ -68,15 +67,15 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
                         test_embeddings = np.array(batch_embeddings)
                     else:
                         test_embeddings = np.concatenate((test_embeddings, batch_embeddings), axis=0)
-                    self.logger.info(f"{self._prefix} Finished embeddings extraction for samples {i} -- {i + len(batch) - 1}")
+                    self.log(f"Finished embeddings extraction for samples {i} -- {i + len(batch) - 1}")
                 self.unnest_prefix()
 
             except Exception as e:
-                self.logger.error(f"{self._prefix} Error extracting embeddings for dataset {self.task.dataset_id}: {e}")
-                self.logger.error(f"{self._prefix} Skipping this experiment.")
+                self.log(f"Error extracting embeddings for dataset {self.task.dataset_id}: {e}", "error")
+                self.log(f"Skipping this experiment.", "error")
                 return
 
-            self.logger.info(f"{self._prefix} Embeddings extraction finished.")
+            self.log(f"Embeddings extraction finished.")
 
             # Evaluate the model and return the results as a dictionary
             result = {
@@ -93,7 +92,7 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
                 'execution_time': time.time() - start_time,
                 'tag': experiment_mode.value
             }
-            self.logger.info(f"{self._prefix} Dataset finished. Execution time: {result['execution_time']} seconds.")
+            self.log(f"Dataset finished. Execution time: {result['execution_time']} seconds.")
             self.write_experiment_result_to_db(result)
             self._rollback_data_based_on_mode(experiment_mode)
         self.unnest_prefix()

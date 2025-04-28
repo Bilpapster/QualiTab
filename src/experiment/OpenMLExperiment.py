@@ -1,5 +1,5 @@
-from abc import ABC, abstractmethod
 import openml
+from abc import ABC, abstractmethod
 
 from . import Experiment
 
@@ -49,7 +49,7 @@ class OpenMLExperiment(Experiment, ABC):
             tasks = benchmark_suite.tasks
             datasets_to_skip = benchmark_config.get("datasets_to_skip", [])
 
-            self.logger.info(f"{self._prefix} Working on benchmark {benchmark_config.get('description', 'unknown')}")
+            self.log(f"Working on benchmark {benchmark_config.get('description', 'unknown')}")
 
             self.nest_prefix()
             for task_index, dataset_id in enumerate(tasks):
@@ -60,7 +60,7 @@ class OpenMLExperiment(Experiment, ABC):
                 if self.task.dataset_id in datasets_to_skip:
                     continue
 
-                self.logger.info(f"{self._prefix} Working on dataset {self.task.dataset_id} ({task_index + 1}/{len(tasks)})")
+                self.log(f"Working on dataset {self.task.dataset_id} ({task_index + 1}/{len(tasks)})")
 
                 self.nest_prefix()
                 for random_seed in self.random_seeds:

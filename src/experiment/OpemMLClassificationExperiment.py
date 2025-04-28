@@ -1,10 +1,9 @@
-import numpy as np
 import time
+import numpy as np
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_score, recall_score
 
-from . import ClassificationExperiment
-from .OpenMLExperiment import OpenMLExperiment
-from src.config import ExperimentMode, get_adaptive_inference_limit
+from . import ClassificationExperiment, OpenMLExperiment
+from src.config import get_adaptive_inference_limit
 
 
 class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment):
@@ -32,11 +31,11 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
         )
 
     def run_one_experiment(self, benchmark_config=None):
-        self.logger.info(f"{self._prefix} Running experiment with random seed: {self.random_seed}")
+        self.log(f"Running experiment with random seed: {self.random_seed}")
 
         self.nest_prefix()
         for experiment_mode in self.modes_iterator(benchmark_config):
-            self.logger.info(f"{self._prefix} Running experiment with mode: {experiment_mode}")
+            self.log(f"Running experiment with mode: {experiment_mode}")
             start_time = time.time()
             self._pollute_data_based_on_mode(experiment_mode)
 
@@ -44,15 +43,15 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
                 self.model.fit(self.X_train, self.y_train)
                 classes = self.model.classes_
             except Exception as e:
-                self.logger.error(f"{self._prefix} Error fitting the model for dataset {self.task.dataset_id}: {e}")
-                self.logger.error(f"{self._prefix} Skipping this experiment.")
+                self.log(f"Error fitting the model for dataset {self.task.dataset_id}: {e}", "error")
+                self.log(f"Skipping this experiment.", "error")
                 return
 
-            self.logger.info(f"{self._prefix} Model fitted successfully. The classes are {self.model.classes_}")
+            self.log(f"Model fitted successfully. The classes are {self.model.classes_}")
             limit = get_adaptive_inference_limit(
                 len(self.X_train), len(self.X_train.columns), len(self.model.classes_)
             )
-            self.logger.info(f"{self._prefix} Starting inference on {len(self.X_test)} samples in batches of {limit}.")
+            self.log(f"Starting inference on {len(self.X_test)} samples in batches of {limit}.")
 
             prediction_probabilities = None
             self.nest_prefix()
@@ -67,13 +66,13 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
                 else:
                     prediction_probabilities = np.concatenate((prediction_probabilities, batch_probabilities),
                                                               axis=0)
-                self.logger.info(f"{self._prefix} Finished inference for samples {i} -- {i + len(batch) - 1}")
+                self.log(f"Finished inference for samples {i} -- {i + len(batch) - 1}")
             self.unnest_prefix()
 
-            self.logger.info(f"{self._prefix} Inference finished.")
+            self.log(f"Inference finished.")
             predictions = np.array(classes)[np.argmax(prediction_probabilities, axis=1)]
-            self.logger.info(
-                f"{self._prefix} Prediction probabilities successfully converted to predictions of shape {predictions.shape}.")
+            self.log(
+                f"Prediction probabilities successfully converted to predictions of shape {predictions.shape}.")
 
             # Evaluate the model and return the results as a dictionary
             result = {
@@ -94,7 +93,7 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
                 'execution_time': time.time() - start_time,
                 'tag': experiment_mode.value
             }
-            self.logger.info(f"{self._prefix} Dataset finished. Execution time: {result['execution_time']} seconds.")
+            self.log(f"Dataset finished. Execution time: {result['execution_time']} seconds.")
             self.write_experiment_result_to_db(result)
             self._rollback_data_based_on_mode(experiment_mode)
         self.unnest_prefix()

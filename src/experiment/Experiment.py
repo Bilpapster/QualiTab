@@ -18,6 +18,7 @@ class Experiment(ABC):
     """
     # logger is **class** attribute on purpose.
     # You can use it in the class methods as usually: self.logger.info(...)
+    # for logging with indentation, use directly self.log("message", "level"), level in {'info', 'warning', 'error'}
     logger = configure_logging()
 
     def __init__(self):
@@ -48,6 +49,20 @@ class Experiment(ABC):
         Should be called right after a loop or nested block ends.
         """
         self._prefix = self._prefix[:-4]
+
+    def log(self, message: str, level: str = 'info'):
+        """
+        Logs a message with the specified logging level.
+        """
+        match level:
+            case 'info':
+                self.logger.info(f"{self._prefix} {message}")
+            case 'error':
+                self.logger.error(f"{self._prefix} {message}")
+            case 'warning':
+                self.logger.warning(f"{self._prefix} {message}")
+            case _:
+                raise ValueError(f"Unknown log level: {level}. Use 'info', 'error', or 'warning'.")
 
     @abstractmethod
     def insertion_query(self, result: dict) -> dict:
