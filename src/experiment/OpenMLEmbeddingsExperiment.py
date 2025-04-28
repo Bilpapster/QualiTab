@@ -16,7 +16,8 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
             benchmark_configs: dict = None,
             random_seeds: list = None,
             datasets_to_skip: list | set = [],
-            n_folds: int = 1
+            n_folds: int = 1,
+            debug=False
     ):
         """
         Initializes the OpenMLClassificationExperimentImproved class.
@@ -34,6 +35,7 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
         self.error_type = None
         self.corrupted_columns = []
         self.corrupted_rows = []
+        self.debug = debug
 
     def run_one_experiment(self, benchmark_config=None):
         self.log(f"Running experiment with random seed: {self.random_seed}")
@@ -53,13 +55,15 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
                 self.nest_prefix()
                 for i in range(0, len(self.X_test), limit):
                     batch = self.X_test[i:i + limit]
-                    # batch_embeddings = self.model.get_embeddings(
-                    #                    self.X_train,
-                    #                    self.y_train,
-                    #                    self.X_test,
-                    #                    data_source="test",
-                    # )
-                    batch_embeddings = np.random.randn(1, len(batch), 192)
+                    if self.debug:
+                        batch_embeddings = np.random.randn(1, len(batch), 192)
+                    else:
+                        batch_embeddings = self.model.get_embeddings(
+                                           self.X_train,
+                                           self.y_train,
+                                           self.X_test,
+                                           data_source="test",
+                        )
                     # (n_estimators, n_samples, emb_dimension) -> (n_samples, emb_dimension)
                     batch_embeddings = batch_embeddings[0]
 
