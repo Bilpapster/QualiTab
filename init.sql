@@ -1,5 +1,3 @@
--- init.sql
--- Check if the table exists
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_tables WHERE tablename = 'experiments') THEN
@@ -26,7 +24,7 @@ BEGIN
             number_of_classes INTEGER NOT NULL,
             number_of_features INTEGER NOT NULL,
             random_seed INTEGER,
-            embeddings JSONB,
+            test_embeddings JSONB,
             error_type VARCHAR(255),
             corrupted_columns JSONB,
             corrupted_rows JSONB,
