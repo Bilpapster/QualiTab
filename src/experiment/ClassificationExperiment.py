@@ -42,6 +42,5 @@ class ClassificationExperiment(Experiment, ABC):
             ),
         }
 
-    @staticmethod
-    def get_model_from_dataset_config(dataset_config: dict):
+    def get_model_from_dataset_config(self, dataset_config: dict):
         return TabPFNClassifier()

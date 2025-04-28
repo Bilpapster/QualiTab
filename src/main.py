@@ -1,4 +1,4 @@
-from experiment import OpenMLClassificationExperiment
+from experiment import OpenMLClassificationExperiment, OpenMLEmbeddingsExperiment
 from config import openML_dataset_configs
 from utils import (
     get_seeds_from_env_or_else_default,
@@ -7,8 +7,13 @@ from utils import (
 
 
 if __name__ == "__main__":
-    OpenMLClassificationExperiment(
-        benchmark_configs=openML_dataset_configs,
+    # OpenMLClassificationExperiment(
+    #     benchmark_configs=openML_dataset_configs,
+    #     random_seeds=get_seeds_from_env_or_else_default(),
+    #     datasets_to_skip=get_finished_datasets_from_env_or_else_empty(),
+    # ).run()
+    OpenMLEmbeddingsExperiment(
+        benchmark_configs=openML_dataset_configs[0],
         random_seeds=get_seeds_from_env_or_else_default(),
         datasets_to_skip=get_finished_datasets_from_env_or_else_empty(),
     ).run()

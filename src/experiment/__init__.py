@@ -1,4 +1,6 @@
 from .Experiment import Experiment
 from .ClassificationExperiment import ClassificationExperiment
+from .EmbeddingsExperiment import EmbeddingsExperiment
 from .OpenMLExperiment import OpenMLExperiment
 from .OpemMLClassificationExperiment import OpenMLClassificationExperiment
+from .OpenMLEmbeddingsExperiment import OpenMLEmbeddingsExperiment

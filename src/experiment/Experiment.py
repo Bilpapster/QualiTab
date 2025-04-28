@@ -219,8 +219,7 @@ class Experiment(ABC):
         """
         return dataset_config['name']
 
-    @staticmethod
-    def get_model_from_dataset_config(dataset_config: dict):
+    def get_model_from_dataset_config(self, dataset_config: dict):
         """
         Returns the model name from the dataset configuration.
         """
