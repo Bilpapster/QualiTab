@@ -15,7 +15,7 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
             self,
             benchmark_configs: dict = None,
             random_seeds: list = None,
-            finished_datasets: list | set = None,
+            datasets_to_skip: list | set = [],
             debug=False
     ):
         """
@@ -28,7 +28,7 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
             self,
             benchmark_configs=benchmark_configs,
             random_seeds=random_seeds,
-            finished_datasets=finished_datasets if finished_datasets else self.get_finished_datasets()
+            datasets_to_skip=datasets_to_skip
         )
         self.debug = debug
 

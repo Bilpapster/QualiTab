@@ -15,7 +15,7 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
             self,
             benchmark_configs: dict = None,
             random_seeds: list = None,
-            finished_datasets: list | set = None,
+            datasets_to_skip: list | set = [],
             n_folds: int = 1,
             debug=False
     ):
@@ -30,7 +30,7 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
             self,
             benchmark_configs=benchmark_configs,
             random_seeds=random_seeds,
-            finished_datasets=finished_datasets if finished_datasets else self.get_finished_datasets()
+            datasets_to_skip=datasets_to_skip
         )
         self.error_type = None
         self.corrupted_columns = []

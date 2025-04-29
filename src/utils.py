@@ -38,14 +38,6 @@ def parse_comma_separated_integers(s):
     return [int(x.strip()) for x in s.strip().split(',')]
 
 
-def get_finished_datasets_from_env_or_else_empty() -> set[int]:
-    import os
-
-    load_dotenv()
-    finished_datasets_str = os.getenv('FINISHED_DATASETS', "")
-    return set(parse_comma_separated_integers(finished_datasets_str))
-
-
 def get_seeds_from_env_or_else_default() -> list[int]:
     """
     Retrieves a list of random seeds from the environment variable 'SEEDS'.
@@ -56,6 +48,18 @@ def get_seeds_from_env_or_else_default() -> list[int]:
     load_dotenv()
     seeds_str = os.getenv('SEEDS', '100,200,300')
     return parse_comma_separated_integers(seeds_str)
+
+
+def get_datasets_to_skip_from_env_or_else_empty() -> set[int]:
+    """
+    Retrieves a list of datasets to skip from the environment variable 'DATASETS_TO_SKIP'.
+    If the environment variable is not set, it returns an empty set.
+    """
+    import os
+
+    load_dotenv()
+    datasets_to_skip_str = os.getenv('DATASETS_TO_SKIP', "")
+    return set(parse_comma_separated_integers(datasets_to_skip_str))
 
 
 def connect_to_db() -> tuple:

@@ -10,12 +10,13 @@ class OpenMLExperiment(Experiment, ABC):
             self,
             benchmark_configs: dict = None,
             random_seeds: list = None,
-            finished_datasets: list | set = []
+            datasets_to_skip: list | set = []
     ):
         super().__init__()
         self.benchmark_configs = benchmark_configs
         self.random_seeds = random_seeds
-        self.finished_datasets = finished_datasets
+        self.datasets_to_skip = set(datasets_to_skip)
+        self.finished_datasets = self.get_finished_datasets()
         self.task = None
 
     def load_dataset(self, dataset_config: dict, **kwargs) -> None:
@@ -49,7 +50,6 @@ class OpenMLExperiment(Experiment, ABC):
             benchmark_suite = openml.study.get_suite(benchmark_config["name"])
             tasks = benchmark_suite.tasks
             random.shuffle(tasks) # shuffle tasks to overcome bottlenecks of GPU/CPU usage
-            datasets_to_skip = set(self.finished_datasets)
 
             self.log(f"Working on benchmark {benchmark_config.get('description', 'unknown')}")
 
@@ -59,7 +59,12 @@ class OpenMLExperiment(Experiment, ABC):
                 # We use dataset_id only to get the task object from OpenML.
                 # Thereafter, we use task.dataset_id wherever dataset id is needed for consistency.
                 self.task = openml.tasks.get_task(dataset_id)
-                if self.task.dataset_id in datasets_to_skip:
+                if self.task.dataset_id in self.datasets_to_skip:
+                    self.log(f"Skipping dataset {self.task.dataset_id} as requested by user.")
+                    continue
+
+                if self.task.dataset_id in self.finished_datasets:
+                    self.log(f"Skipping dataset {self.task.dataset_id} because it is already processed.")
                     continue
 
                 self.log(f"Working on dataset {self.task.dataset_id} ({task_index + 1}/{len(tasks)})")
