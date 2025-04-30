@@ -6,3 +6,4 @@ pandas==2.2.3
 python-dotenv==1.1.0
 jenga==0.0.1a1
 openml==0.15.1
+psycopg2-binary==2.9.10
