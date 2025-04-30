@@ -26,9 +26,10 @@ class EmbeddingsExperiment(Experiment, ABC):
                  corrupted_columns,
                  corrupted_rows,
                  execution_time,
-                 tag
+                 tag,
+                 corruption_percent
              )
-             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
              """,
             'vars': (
                 str(uuid.uuid4()),
@@ -44,6 +45,7 @@ class EmbeddingsExperiment(Experiment, ABC):
                 result['corrupted_rows'],
                 result['execution_time'],
                 result['tag'],
+                result['corruption_percent'],
             ),
         }
 

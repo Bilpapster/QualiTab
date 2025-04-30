@@ -84,7 +84,7 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
 
             # Evaluate the model and return the results as a dictionary
             result = {
-                'dataset': f"OpenML-{self.task.dataset_id}-{len(classes)}",
+                'dataset': f"OpenML-{self.task.dataset_id}",
                 'train_size': len(self.X_train),
                 'test_size': len(self.X_test),
                 'number_of_classes': len(classes),
@@ -95,7 +95,8 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
                 'corrupted_columns': json.dumps(self.corrupted_columns),
                 'corrupted_rows': json.dumps(self.corrupted_rows),
                 'execution_time': time.time() - start_time,
-                'tag': experiment_mode.value
+                'tag': experiment_mode.value,
+                'corruption_percent': 0, # todo: important to handle the corruption percent correctly with Jenga
             }
             self.log(f"Dataset finished. Execution time: {result['execution_time']} seconds.")
             self.write_experiment_result_to_db(result)
