@@ -1,6 +1,6 @@
 from abc import ABC
 
-from . import Experiment
+from .Experiment import Experiment
 from tabpfn_extensions import TabPFNClassifier, TabPFNRegressor
 from tabpfn_extensions.embedding import TabPFNEmbedding
 import uuid
@@ -58,10 +58,14 @@ class EmbeddingsExperiment(Experiment, ABC):
         reg = TabPFNRegressor(n_estimators=1, random_state=self.random_seed)
         return TabPFNEmbedding(tabpfn_reg=reg) # todo in future version we can also use n_folds
 
-    def finished_datasets_query(self) -> str:
+    def finished_experiments_query(self) -> str:
         return """
-               SELECT DISTINCT dataset_name 
-               FROM embeddings_experiments 
-               GROUP BY dataset_name 
-               HAVING COUNT(*) >= 10
+        SELECT CONCAT(
+            dataset_name, '_', 
+            random_seed, '_', 
+            error_type, '_', 
+            tag, '_', 
+            corruption_percent
+        )
+        FROM embeddings_experiments 
         """

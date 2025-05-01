@@ -2,7 +2,8 @@ import time
 import numpy as np
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_score, recall_score
 
-from . import ClassificationExperiment, OpenMLExperiment
+from .ClassificationExperiment import ClassificationExperiment
+from .OpenMLExperiment import OpenMLExperiment
 from src.config import get_adaptive_inference_limit
 
 
@@ -81,7 +82,7 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
 
             # Evaluate the model and return the results as a dictionary
             result = {
-                'dataset': f"OpenML-{self.task.dataset_id}-{len(classes)}",
+                'dataset': self.get_dataset_name_from_dataset_id(self.task.dataset_id), # todo reconcile cobra database to have consistent naming in the classification table
                 'train_size': len(self.X_train),
                 'test_size': len(self.X_test),
                 'used_default_split': False,

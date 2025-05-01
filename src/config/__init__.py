@@ -5,4 +5,3 @@ from .tabpfn_configs import (
     TABPFN_MAX_CLASSES,
     get_adaptive_inference_limit,
 )
-from .experiment_configs import ExperimentMode

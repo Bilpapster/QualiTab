@@ -2,7 +2,8 @@ import json
 import time
 import numpy as np
 
-from . import EmbeddingsExperiment, OpenMLExperiment
+from .EmbeddingsExperiment import EmbeddingsExperiment
+from .OpenMLExperiment import OpenMLExperiment
 from src.config import get_adaptive_inference_limit
 
 
@@ -38,11 +39,42 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
         self.debug = debug
 
     def run_one_experiment(self, benchmark_config=None):
-        self.log(f"Running experiment with random seed: {self.random_seed}")
+        if self.random_seed is None or self.random_seed_index is None or self.random_seeds is None:
+            raise ValueError("Random seed(s) (and their indices) must be set before running a specific experiment.")
+
+        if self.X_train is None or self.X_test is None or self.y_train is None or self.y_test is None:
+            raise ValueError("Data must be loaded before running a specific experiment.")
+
+        if benchmark_config is None:
+            raise ValueError("Benchmark configuration must be provided before running a specific experiment.")
+
+        self.log(f"Running experiment with random seed {self.random_seed} ({self.random_seed_index} of {len(self.random_seeds)})")
 
         self.nest_prefix()
-        for experiment_mode in self.modes_iterator(benchmark_config):
+        for experiment_mode, corruption_percents in self.modes_iterator(benchmark_config):
             self.log(f"Running experiment with mode: {experiment_mode}")
+        #     self.nest_prefix()
+        # #######
+        #     for corruption_percent_index, corruption_percent in enumerate(corruption_percents):
+        #         self.log(f"Running experiment with corruption percent {corruption_percent}% ({corruption_percent_index} of {len(corruption_percents)})")
+        #         self.error_type = 'missing values' # todo handle a loop with different error types
+        #         self.corrupted_columns = []
+        #         self.corrupted_rows = []
+        #
+        #         # Set the random seed for reproducibility
+        #         np.random.seed(self.random_seed)
+        #         self.random_seed = self.random_seeds[self.random_seed_index]
+        #
+        #         # Set the corruption percent
+        #         if experiment_mode == ExperimentMode.CLEAN_CLEAN:
+        #             self.corruption_percent = 0
+        #         else:
+        #             self.corruption_percent = corruption_percent
+        #
+        #     self.unnest_prefix()
+        # self.unnest_prefix()
+        # #####
+
             start_time = time.time()
             self._pollute_data_based_on_mode(experiment_mode)
 
@@ -84,7 +116,7 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
 
             # Evaluate the model and return the results as a dictionary
             result = {
-                'dataset': f"OpenML-{self.task.dataset_id}",
+                'dataset': self.get_dataset_name_from_dataset_id(self.task.dataset_id),
                 'train_size': len(self.X_train),
                 'test_size': len(self.X_test),
                 'number_of_classes': len(classes),

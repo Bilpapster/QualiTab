@@ -1,5 +1,5 @@
 import logging
-from experiment import OpenMLClassificationExperiment
+from experiment.OpemMLClassificationExperiment import OpenMLClassificationExperiment
 from config import openML_dataset_configs
 from utils import get_seeds_from_env_or_else_default, get_datasets_to_skip_from_env_or_else_empty
 

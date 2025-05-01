@@ -22,17 +22,26 @@ cleanML_dataset_configs = [
     {'name': 'KDD', 'task': 'classification', 'target_column': 'is_exciting_20'},
 ]
 
+import sys
+
+sys.path.append("..")
+from src.experiment.ExperimentMode import ExperimentMode
+
 openML_dataset_configs = [
     {
         'name': 'OpenML-CC18',
         'task': 'classification',
         'description': 'OpenML-CC18 benchmark',
         'test_size': 0.3,
+        'experiment_modes': [ExperimentMode.CLEAN_CLEAN],
+        'corruption_percents': [10, 20, 40, 60]
     },
     {
         'name': '8f0ea660163b436bbd4abd49665c7b1d',
         'task': 'regression',
         'description': 'OpenML-CTR23 benchmark',
         'test_size': 0.3,
+        'experiment_modes': [ExperimentMode.CLEAN_CLEAN],
+        'corruption_percents': [10, 20, 40, 60]
     },
 ]

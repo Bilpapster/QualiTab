@@ -1,14 +1,11 @@
 from abc import ABC, abstractmethod
-import random
 import pandas as pd
 import sys
 
 sys.path.append('..')
 
-from tabpfn import TabPFNClassifier, TabPFNRegressor
-from sklearn.model_selection import train_test_split
-from src.utils import configure_logging, connect_to_db, get_seeds_from_env_or_else_default
-from src.config import TABPFN_MAX_SAMPLES, TABPFN_MAX_FEATURES, TABPFN_MAX_CLASSES, ExperimentMode
+from src.utils import configure_logging, connect_to_db
+from src.experiment.ExperimentMode import ExperimentMode
 
 
 class Experiment(ABC):
@@ -73,28 +70,34 @@ class Experiment(ABC):
         pass
 
     @abstractmethod
-    def finished_datasets_query(self) -> str:
+    def finished_experiments_query(self) -> str:
         """
         Returns the SQL query for fetching finished datasets from the database.
         """
         pass
 
-    def get_finished_datasets(self) -> set | list:
+    def get_finished_experiments(self) -> set | list:
         """
         Fetches the finished datasets from the database using the `finished_datasets_query`.
         Returns a set of dataset IDs.
         """
         conn, cursor = connect_to_db()
         try:
-            cursor.execute(self.finished_datasets_query())
+            cursor.execute(self.finished_experiments_query())
             result = cursor.fetchall()
-            return {self.extract_dataset_id_from_db_row(row) for row in result}
+            return {self.process_finished_experiment_result_row(row) for row in result}
         except Exception as e:
-            self.logger.error(f"{self._prefix} Error fetching finished datasets: {e}")
+            self.logger.error(f"{self._prefix} Error fetching finished experiments: {e}")
             return set()
 
-    def extract_dataset_id_from_db_row(self, row: tuple) -> str | int:
-        return int(str(row[0]).split('-')[1])
+    def process_finished_experiment_result_row(self, row: tuple) -> str | int:
+        """
+        Rows here are expected to be a tuple with a single value (concatenated string for uniquely
+        identifying the experiment). In case this logic is not applicable, you should override this method.
+
+        The function processes the row by returning it only element (you can think of is as a flattening/unboxing)
+        """
+        return row[0]
 
     def _check_nof_features(self) -> None:
         """
@@ -102,6 +105,8 @@ class Experiment(ABC):
         If the number of features exceeds the maximum, it randomly samples a subset of features.
         The sampling is done using the same random seed for reproducibility.
         """
+        from src.config import TABPFN_MAX_FEATURES
+
         if len(self.features.columns) <= TABPFN_MAX_FEATURES:
             """If the number of features is smaller than or equal to the maximum allowed by TabPFN, do nothing."""
             return
@@ -157,6 +162,9 @@ class Experiment(ABC):
         If the number of classes exceeds the maximum, it randomly samples a subset of classes.
         The sampling is done using the same random seed for reproducibility.
         """
+        from src.config import TABPFN_MAX_CLASSES
+        import random
+
         classes = set(self.targets)
         if len(classes) <= TABPFN_MAX_CLASSES:
             """If the number of classes is smaller than or equal to the maximum allowed for TabPFN, do nothing."""
@@ -180,6 +188,8 @@ class Experiment(ABC):
         If the number of samples exceeds the maximum, it randomly samples a subset of samples.
         The sampling is done using the same random seed for reproducibility.
         """
+        from src.config import TABPFN_MAX_SAMPLES
+
         if len(self.X_train) <= TABPFN_MAX_SAMPLES:
             """If the number of train samples is smaller than or equal to the maximum number of samples, do nothing."""
             return
@@ -199,6 +209,8 @@ class Experiment(ABC):
         Splits the dataset into training and testing sets using the specified test size and random seed.
         If you plan to fit a TabPFN model, consider using `_check_nof_samples` before fitting the model.
         """
+        from sklearn.model_selection import train_test_split
+
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.features, self.targets,
             test_size=self.test_size, random_state=self.random_seed
@@ -262,6 +274,8 @@ class Experiment(ABC):
         """
         Returns the model name from the dataset configuration.
         """
+        from tabpfn import TabPFNClassifier, TabPFNRegressor
+
         return TabPFNClassifier() if dataset_config['task'] == 'classification' else TabPFNRegressor()
 
     @abstractmethod
@@ -274,6 +288,8 @@ class Experiment(ABC):
 
     @staticmethod
     def get_random_seeds() -> list:
+        from src.utils import get_seeds_from_env_or_else_default
+
         return get_seeds_from_env_or_else_default()
 
     @abstractmethod
@@ -290,13 +306,19 @@ class Experiment(ABC):
 
     def modes_iterator(self, dataset_config):
         """
-        Returns the experiment modes for the given dataset configuration.
+        Returns the experiment modes and corruption rates for the given dataset configuration.
         If no experiment modes are specified, defaults to a list with CLEAN_CLEAN as only element.
+        If no corruption percentages are specified, defaults to a list with 0% corruption as only element.
+        Every element this generator yields is a tuple of (experiment_mode (ExperimentMode), corruption_percents (list)).
         """
         experiment_modes = dataset_config.get('experiment_modes', [ExperimentMode.CLEAN_CLEAN])
+        corruption_percents = dataset_config.get('corruption_percents', [0])
         for experiment_mode in experiment_modes:  # loop through the experiment modes found in configurations
             if experiment_mode in ExperimentMode:  # emit the mode if it is valid (one of the enum values)
-                yield experiment_mode
+                if experiment_mode == ExperimentMode.CLEAN_CLEAN:
+                    yield experiment_mode, [0] # corruption percents are not relevant for the CLEAN_CLEAN mode
+                else:
+                    yield experiment_mode, corruption_percents
 
     def _pollute_data_based_on_mode(self, experiment_mode: ExperimentMode):
         """

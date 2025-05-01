@@ -2,7 +2,7 @@ import openml
 import random
 from abc import ABC, abstractmethod
 
-from . import Experiment
+from .Experiment import Experiment
 
 
 class OpenMLExperiment(Experiment, ABC):
@@ -15,8 +15,9 @@ class OpenMLExperiment(Experiment, ABC):
         super().__init__()
         self.benchmark_configs = benchmark_configs
         self.random_seeds = random_seeds
+        self.random_seed_index = None
         self.datasets_to_skip = set(datasets_to_skip)
-        self.finished_datasets = self.get_finished_datasets()
+        self.finished_experiments = self.get_finished_experiments()
         self.task = None
 
     def load_dataset(self, dataset_config: dict, **kwargs) -> None:
@@ -63,20 +64,33 @@ class OpenMLExperiment(Experiment, ABC):
                     self.log(f"Skipping dataset {self.task.dataset_id} as requested by user.")
                     continue
 
-                if self.task.dataset_id in self.finished_datasets:
-                    self.log(f"Skipping dataset {self.task.dataset_id} because it is already processed.")
-                    continue
+                # Important: we no longer skip already processed datasets to accommodate for more granular skipping.
+                # For example, you may do not want to skip all experiments for a dataset, but only some of them:
+                # e.g., you may want to skip all experiments with random seed 0, but not the others.
+                # You should handle the skipping of already finished experiments in the `run_one_experiment` method.
 
                 self.log(f"Working on dataset {self.task.dataset_id} ({task_index + 1}/{len(tasks)})")
 
                 self.nest_prefix()
-                for random_seed in self.random_seeds:
+                for random_seed_index, random_seed in enumerate(self.random_seeds):
+                    self.random_seed_index = random_seed_index
                     self.random_seed = random_seed
                     self.load_dataset(benchmark_config, random_state=random_seed)
                     self.model = self.get_model_from_dataset_config(benchmark_config)
                     self.run_one_experiment(benchmark_config)
                 self.unnest_prefix()
             self.unnest_prefix()
+
+    def get_dataset_name_from_dataset_id(self, dataset_id: int) -> str:
+        """
+        Get the dataset name from the dataset id. Currently, prepends 'OpenML-' to the dataset id.
+        For example, if the dataset id is 123, the name will be 'OpenML-123'.
+        Args:
+            dataset_id (int): The dataset id.
+        Returns:
+            str: The dataset name.
+        """
+        return f"OpenML-{dataset_id}"
 
     @abstractmethod
     def run_one_experiment(self, benchmark_config=None):

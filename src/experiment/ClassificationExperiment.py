@@ -1,6 +1,6 @@
 from abc import ABC
 
-from . import Experiment
+from .Experiment import Experiment
 from tabpfn import TabPFNClassifier
 import uuid
 
@@ -42,12 +42,16 @@ class ClassificationExperiment(Experiment, ABC):
             ),
         }
 
-    def finished_datasets_query(self) -> str:
+    def finished_experiments_query(self) -> str:
         return """
-               SELECT DISTINCT dataset_name 
-               FROM classification_experiments 
-               GROUP BY dataset_name 
-               HAVING COUNT(*) >= 10
+        SELECT CONCAT(
+            dataset_name, '_', 
+            random_seed, '_', 
+            error_type, '_', 
+            tag, '_', 
+            corruption_percent
+        )
+        FROM classification_experiments 
         """
 
     def get_model_from_dataset_config(self, dataset_config: dict):
