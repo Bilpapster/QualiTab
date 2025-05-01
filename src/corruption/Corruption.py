@@ -1,7 +1,7 @@
 from .CorruptionType import CorruptionType
 
 
-class CorruptionConfiguration():
+class Corruption():
     def __init__(self):
         self._corruption_type = None
         self._corruption_percent = 100  # Default to 100% corruption
@@ -36,7 +36,7 @@ class CorruptionConfiguration():
         Get the corruption percentages.
         Returns a copy of the list to prevent external modification.
         """
-        return self._corruption_percent.copy()
+        return self._corruption_percent
 
     @corruption_percent.setter
     def corruption_percent(self, corruption_percent: int | float):
