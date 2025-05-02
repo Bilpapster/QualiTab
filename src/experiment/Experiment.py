@@ -1,11 +1,9 @@
 from abc import ABC, abstractmethod
 import pandas as pd
-import sys
 
-sys.path.append('..')
-
-from src.utils import configure_logging, connect_to_db
-from src.experiment.ExperimentMode import ExperimentMode
+from utils import configure_logging, connect_to_db
+from experiment.ExperimentMode import ExperimentMode
+from corruption.CorruptionsManager import CorruptionsManager
 
 
 class Experiment(ABC):
@@ -32,6 +30,25 @@ class Experiment(ABC):
         self.y_train = None  # the training targets
         self.X_test = None  # the test features
         self.y_test = None  # the test targets
+
+        self._corruptions_manager = None # the special object storing a list of corruptions to perform
+
+
+    @property
+    def corruptions_manager(self):
+        """
+        Returns the corruptions manager.
+        """
+        return self._corruptions_manager
+
+    @corruptions_manager.setter
+    def corruptions_manager(self, corruptions_manager):
+        """
+        Sets the corruptions manager.
+        """
+        if not isinstance(corruptions_manager, CorruptionsManager):
+            raise TypeError("Corruptions manager must be an instance of CorruptionsManager.")
+        self._corruptions_manager = corruptions_manager
 
     def nest_prefix(self):
         """
@@ -105,7 +122,7 @@ class Experiment(ABC):
         If the number of features exceeds the maximum, it randomly samples a subset of features.
         The sampling is done using the same random seed for reproducibility.
         """
-        from src.config import TABPFN_MAX_FEATURES
+        from config import TABPFN_MAX_FEATURES
 
         if len(self.features.columns) <= TABPFN_MAX_FEATURES:
             """If the number of features is smaller than or equal to the maximum allowed by TabPFN, do nothing."""
@@ -162,7 +179,7 @@ class Experiment(ABC):
         If the number of classes exceeds the maximum, it randomly samples a subset of classes.
         The sampling is done using the same random seed for reproducibility.
         """
-        from src.config import TABPFN_MAX_CLASSES
+        from config import TABPFN_MAX_CLASSES
         import random
 
         classes = set(self.targets)
@@ -188,7 +205,7 @@ class Experiment(ABC):
         If the number of samples exceeds the maximum, it randomly samples a subset of samples.
         The sampling is done using the same random seed for reproducibility.
         """
-        from src.config import TABPFN_MAX_SAMPLES
+        from config import TABPFN_MAX_SAMPLES
 
         if len(self.X_train) <= TABPFN_MAX_SAMPLES:
             """If the number of train samples is smaller than or equal to the maximum number of samples, do nothing."""
@@ -288,7 +305,7 @@ class Experiment(ABC):
 
     @staticmethod
     def get_random_seeds() -> list:
-        from src.utils import get_seeds_from_env_or_else_default
+        from utils import get_seeds_from_env_or_else_default
 
         return get_seeds_from_env_or_else_default()
 

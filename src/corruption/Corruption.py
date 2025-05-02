@@ -2,13 +2,20 @@ from .CorruptionType import CorruptionType
 
 
 class Corruption():
-    def __init__(self):
-        self._corruption_type = None
-        self._corruption_percent = 100  # Default to 100% corruption
-        self._corruption_seed = None
+    def __init__(
+            self,
+            type: CorruptionType,
+            percent: int | float = 100,
+            random_seed: int | None = None,
+            name: str | None = None,
+            description: str | None = None
+    ):
+        self.corruption_type = type
+        self.corruption_percent = percent
+        self.corruption_seed = random_seed
 
-        self._corruption_name = None
-        self._corruption_description = None
+        self.corruption_name = name
+        self.corruption_description = description
 
     @property
     def corruption_type(self):

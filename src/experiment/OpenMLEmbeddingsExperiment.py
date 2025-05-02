@@ -4,7 +4,7 @@ import numpy as np
 
 from .EmbeddingsExperiment import EmbeddingsExperiment
 from .OpenMLExperiment import OpenMLExperiment
-from src.config import get_adaptive_inference_limit
+from config import get_adaptive_inference_limit
 
 
 class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):

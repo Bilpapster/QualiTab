@@ -22,10 +22,8 @@ cleanML_dataset_configs = [
     {'name': 'KDD', 'task': 'classification', 'target_column': 'is_exciting_20'},
 ]
 
-import sys
 
-sys.path.append("..")
-from src.experiment.ExperimentMode import ExperimentMode
+from experiment.ExperimentMode import ExperimentMode
 
 openML_dataset_configs = [
     {

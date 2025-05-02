@@ -36,7 +36,7 @@ class CorruptionsManager:
 
         self._corruptions = corruptions
 
-    def add_corruption(self, corruption: Corruption):
+    def add_corruption(self, corruption: Corruption) -> "CorruptionsManager":
         """
         Add a Corruption object to the list of corruptions.
         """
@@ -47,3 +47,4 @@ class CorruptionsManager:
             self._corruptions = []
 
         self._corruptions.append(corruption)
+        return self

@@ -2,7 +2,7 @@ import logging
 from dotenv import load_dotenv
 import openml
 
-from src.config import (
+from config import (
     TABPFN_MAX_SAMPLES,
     TABPFN_MAX_FEATURES,
     TABPFN_MAX_CLASSES,

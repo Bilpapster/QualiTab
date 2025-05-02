@@ -4,7 +4,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_s
 
 from .ClassificationExperiment import ClassificationExperiment
 from .OpenMLExperiment import OpenMLExperiment
-from src.config import get_adaptive_inference_limit
+from config import get_adaptive_inference_limit
 
 
 class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment):
