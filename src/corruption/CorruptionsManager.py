@@ -19,7 +19,7 @@ class CorruptionsManager:
         """
         import copy
 
-        return copy.deepcopy(self._corruptions) if self._corruptions else None
+        return copy.deepcopy(self._corruptions) if self._corruptions else []
 
     @corruptions.setter
     def corruptions(self, corruptions: list[Corruption]):

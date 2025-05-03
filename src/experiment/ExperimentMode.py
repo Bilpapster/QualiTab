@@ -1,5 +1,8 @@
 from enum import Enum
 
+from corruption import CorruptionType
+
+
 class ExperimentMode(Enum):
     """
     Enum for experiment modes. The first word corresponds to the state of the training set,
@@ -11,3 +14,15 @@ class ExperimentMode(Enum):
     CLEAN_DIRTY = 'CLEAN_DIRTY'
     DIRTY_CLEAN = 'DIRTY_CLEAN'
     DIRTY_DIRTY = 'DIRTY_DIRTY'
+
+    def get_compatible_corruptions_from_candidates(self, candidate_corruptions: list[CorruptionType]) -> list[CorruptionType]:
+        compatible_corruptions = {CorruptionType.MCAR, CorruptionType.SCAR, CorruptionType.CSCAR}
+
+        match self.value:
+            case ExperimentMode.CLEAN_CLEAN:  # for CLEAN_CLEAN mode, return no corruptions
+                return [CorruptionType.NONE]
+            case _: # for any other experiment mode, return the intersection of candidate and compatible corruptions
+                compatible_corruptions = {CorruptionType.MCAR, CorruptionType.SCAR, CorruptionType.CSCAR}
+                return [corruption for corruption in candidate_corruptions if corruption in compatible_corruptions]
+
+
