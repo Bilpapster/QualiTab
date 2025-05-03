@@ -16,9 +16,7 @@ class ExperimentMode(Enum):
     DIRTY_DIRTY = 'DIRTY_DIRTY'
 
     def get_compatible_corruptions_from_candidates(self, candidate_corruptions: list[CorruptionType]) -> list[CorruptionType]:
-        compatible_corruptions = {CorruptionType.MCAR, CorruptionType.SCAR, CorruptionType.CSCAR}
-
-        match self.value:
+        match self:
             case ExperimentMode.CLEAN_CLEAN:  # for CLEAN_CLEAN mode, return no corruptions
                 return [CorruptionType.NONE]
             case _: # for any other experiment mode, return the intersection of candidate and compatible corruptions

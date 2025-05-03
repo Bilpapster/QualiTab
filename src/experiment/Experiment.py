@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import pandas as pd
 
+from corruption import CorruptionType
 from utils import configure_logging, connect_to_db
 from experiment.ExperimentMode import ExperimentMode
 from corruption.CorruptionsManager import CorruptionsManager
@@ -22,7 +23,7 @@ class Experiment(ABC):
         self.target_name = None  # the name of the target column in the dataset
         self.model = None # the model to use for training, inference, embeddings, or data generation
 
-        self._prefix = '--' # the prefix to use for indentation in the logs
+        self._prefix = '- - ' # the prefix to use for indentation in the logs
 
         self.features = None  # the features of the dataset, aka X (`X_train` and `X_test` together)
         self.targets = None  # the targets of the dataset, aka y (`y_train` and `y_test` together)
@@ -55,7 +56,7 @@ class Experiment(ABC):
         Adds a prefix to the logger messages for better readability.
         Should be called right before a new loop or nested block begins
         """
-        self._prefix += '----'
+        self._prefix += '- - '
 
     def unnest_prefix(self):
         """
@@ -104,7 +105,7 @@ class Experiment(ABC):
             result = cursor.fetchall()
             return {self.process_finished_experiment_result_row(row) for row in result}
         except Exception as e:
-            self.logger.error(f"{self._prefix} Error fetching finished experiments: {e}")
+            self.log(f"{self._prefix} Error fetching finished experiments: {e}", "error")
             return set()
 
     def process_finished_experiment_result_row(self, row: tuple) -> str | int:
@@ -130,10 +131,8 @@ class Experiment(ABC):
 
         """If the number of features in the dataset is larger than the maximum number of features,
         randomly sample a subset of the max allowed number of features from the original features."""
-        self.logger.info(
-            f"{self._prefix} The features ({len(self.features.columns)}) exceed the maximum allowed ({TABPFN_MAX_FEATURES}). "
-            f"{self._prefix} Sampling {TABPFN_MAX_FEATURES} features using seed {self.random_seed}."
-        )
+        self.log(f"{self._prefix} The features ({len(self.features.columns)}) exceed the maximum allowed ({TABPFN_MAX_FEATURES}). ")
+        self.log(f"{self._prefix} Sampling {TABPFN_MAX_FEATURES} features using seed {self.random_seed}.")
         self.features = self.features.sample(
             n=TABPFN_MAX_FEATURES, replace=False,
             random_state=self.random_seed, axis=1
@@ -189,12 +188,10 @@ class Experiment(ABC):
 
         """If the number of classes is larger than the maximum allowed for TabPFN,
         randomly sample a subset of the max allowed number of classes from the original classes."""
-        self.logger.info(
-            f"{self._prefix} The number of classes ({len(classes)}) exceed the maximum allowed ({TABPFN_MAX_CLASSES}). "
-            f"{self._prefix} Sampling {TABPFN_MAX_CLASSES} classes (keeping all their samples) using seed {self.random_seed}."
-        )
+        self.log(f"The number of classes ({len(classes)}) exceed the maximum allowed ({TABPFN_MAX_CLASSES}). ")
+        self.log(f"Sampling {TABPFN_MAX_CLASSES} classes (keeping all their samples) using seed {self.random_seed}.")
         classes_to_preserve = random.sample(sorted(classes), TABPFN_MAX_CLASSES)
-        self.logger.info(f"{self._prefix} Selected classes: {classes_to_preserve}")
+        self.log(f"Selected classes: {classes_to_preserve}")
         data = self._get_total_data()
         data = data[data[self.target_name].isin(classes_to_preserve)]
         self._update_features_and_targets_from_data(data)
@@ -213,10 +210,8 @@ class Experiment(ABC):
 
         """If the number of train samples is larger than the maximum allowed for TabPFN,
         randomly sample a subset of the max allowed number of samples from the original samples."""
-        self.logger.info(
-            f"{self._prefix} The training samples ({len(self.X_train)}) exceed the maximum allowed ({TABPFN_MAX_SAMPLES}). "
-            f"{self._prefix} Sampling {TABPFN_MAX_SAMPLES} samples using seed {self.random_seed}."
-        )
+        self.log(f"The training samples ({len(self.X_train)}) exceed the maximum allowed ({TABPFN_MAX_SAMPLES}).")
+        self.log(f"Sampling {TABPFN_MAX_SAMPLES} samples using seed {self.random_seed}.")
         train_data = self._get_train_data().sample(n=TABPFN_MAX_SAMPLES, replace=False,
                                                    random_state=self.random_seed, axis=0)
         self._update_X_y_train_from_train_data(train_data)
@@ -268,10 +263,10 @@ class Experiment(ABC):
         try:
             cursor.execute(**self.insertion_query(result))
             conn.commit()
-            self.logger.info(f"{self._prefix} Experiment for {self.get_dataset_name_from_result(result)} saved to db.")
+            self.log(f"Experiment for {self.get_dataset_name_from_result(result)} saved to db.")
         except Exception as e:
             conn.rollback()  # Rollback in case of error
-            self.logger.error(f"{self._prefix} Error processing this result configuration: {result}: {e}")
+            self.log(f"Error processing this result configuration: {result}: {e}", "error")
 
     @staticmethod
     def get_dataset_name_from_result(result: dict) -> str:
@@ -321,7 +316,7 @@ class Experiment(ABC):
         # just make sure to call the super().run() method
 
 
-    def modes_iterator(self, dataset_config):
+    def get_modes_and_corruptions_configurations(self, dataset_config):
         """
         Returns the experiment modes and corruption rates for the given dataset configuration.
         If no experiment modes are specified, defaults to a list with CLEAN_CLEAN as only element.
@@ -329,20 +324,28 @@ class Experiment(ABC):
         Every element this generator yields is a tuple of (experiment_mode (ExperimentMode), corruption_percents (list)).
         """
         experiment_modes = dataset_config.get('experiment_modes', [ExperimentMode.CLEAN_CLEAN])
-        corruption_percents = dataset_config.get('corruption_percents', [0])
-        for experiment_mode in experiment_modes:  # loop through the experiment modes found in configurations
-            if experiment_mode in ExperimentMode:  # emit the mode if it is valid (one of the enum values)
-                if experiment_mode == ExperimentMode.CLEAN_CLEAN:
-                    yield experiment_mode, [0] # corruption percents are not relevant for the CLEAN_CLEAN mode
-                else:
-                    yield experiment_mode, corruption_percents
+        corruption_row_percents = dataset_config.get('row_corruption_percents', [0])
+        corruption_types = dataset_config.get('corruptions', [CorruptionType.NONE])
+        corruption_column_percents = dataset_config.get('corruption_column_percents', [20])
 
-    def _pollute_data_based_on_mode(self, experiment_mode: ExperimentMode):
+        return [
+            (experiment_mode, corruption_types, corruption_row_percents, corruption_column_percents)
+                for experiment_mode in experiment_modes
+                if experiment_mode in ExperimentMode
+        ]
+
+        # for experiment_mode in experiment_modes:  # loop through the experiment modes found in configurations
+        #     if experiment_mode in ExperimentMode:  # emit the mode if it is valid (one of the enum values)
+        #         yield experiment_mode, corruption_types, corruption_percents # todo update docstring
+
+    def _corrupt_data_based_on_mode(self, experiment_mode: ExperimentMode):
         """
         Pollutes the data based on the experiment mode.
         Args:
             experiment_mode (ExperimentMode): The mode of the experiment to run.
         """
+        # todo probably add corruption percents here and also a corruption object
+        # todo we should also keep track of the corrupted rows and columns max(1, 20%)
         if self.random_seed is None:
             raise ValueError("Random seed must be set before polluting data.")
 
@@ -351,6 +354,7 @@ class Experiment(ABC):
                 # No pollution needed for clean-clean mode
                 return
             case ExperimentMode.CLEAN_DIRTY:
+                # todo use the copy package because now is a short copy
                 self.__X_test_original = self.X_test.copy()
                 self.__y_test_original = self.y_test.copy()
                 # todo pollute X_test, y_test
@@ -374,6 +378,7 @@ class Experiment(ABC):
                 # No rollback needed for clean-clean mode
                 return
             case ExperimentMode.CLEAN_DIRTY:
+                # todo use the copy package because now is a short copy
                 self.X_test = self.__X_test_original.copy()
                 self.__delattr__('__X_test_original')
                 self.y_test = self.__y_test_original.copy()

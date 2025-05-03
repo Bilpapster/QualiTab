@@ -5,13 +5,14 @@ class Corruption():
     def __init__(
             self,
             type: CorruptionType,
-            percent: int | float = 100,
+            row_percent: int | float = 100,
+            column_percent: int | float = 100,
             random_seed: int | None = None,
             name: str | None = None,
             description: str | None = None
     ):
         self.corruption_type = type
-        self.corruption_percent = percent
+        self.corruption_row_percent = row_percent
         self.corruption_seed = random_seed
 
         self.corruption_name = name
@@ -38,21 +39,40 @@ class Corruption():
                 f"Invalid corruption type: {corruption_type}. Currently supported types: {list(CorruptionType)}.")
 
     @property
-    def corruption_percent(self):
+    def corruption_row_percent(self):
         """
         Get the corruption percentages.
         Returns a copy of the list to prevent external modification.
         """
         return self._corruption_percent
 
-    @corruption_percent.setter
-    def corruption_percent(self, corruption_percent: int | float):
+    @corruption_row_percent.setter
+    def corruption_row_percent(self, corruption_percent: int | float):
         """
-        Set the corruption percentages. The value must be an integer or float in the range (0, 100].
+        Set the corruption percentages. The value must be an integer or float in the range [0, 100].
         """
         if not isinstance(corruption_percent, int | float):
             raise TypeError("Corruption percentage must be an integer or float.")
-        if not (0 < corruption_percent <= 100):
+        if not (0 <= corruption_percent <= 100):
+            raise ValueError("Corruption percentage must be in the range (0, 100].")
+        self._corruption_percent = corruption_percent
+
+    @property
+    def corruption_column_percent(self):
+        """
+        Get the corruption percentages.
+        Returns a copy of the list to prevent external modification.
+        """
+        return self._corruption_percent
+
+    @corruption_column_percent.setter
+    def corruption_column_percent(self, corruption_percent: int | float):
+        """
+        Set the corruption percentages. The value must be an integer or float in the range [0, 100].
+        """
+        if not isinstance(corruption_percent, int | float):
+            raise TypeError("Corruption percentage must be an integer or float.")
+        if not (0 <= corruption_percent <= 100):
             raise ValueError("Corruption percentage must be in the range (0, 100].")
         self._corruption_percent = corruption_percent
 
@@ -102,7 +122,7 @@ class Corruption():
         if self.corruption_type is None:
             raise ValueError("Corruption type must be set before corrupting data.")
 
-        if self.corruption_percent is None:
+        if self.corruption_row_percent is None:
             raise ValueError("Corruption percentage must be set before corrupting data.")
 
         match self.corruption_type:
@@ -131,7 +151,7 @@ class Corruption():
 
         data[column] = MissingValues(
             column=column,
-            fraction=self.corruption_percent,
+            fraction=self.corruption_row_percent,
             missingness="MCAR"
         ).transform(data)[column]
         return data
@@ -150,7 +170,7 @@ class Corruption():
 
         data[column] = Scaling(
             column=column,
-            fraction=self.corruption_percent,
+            fraction=self.corruption_row_percent,
             sampling="CAR"
         )
         return data
@@ -169,7 +189,7 @@ class Corruption():
 
         data[column] = CategoricalShift(
             column=column,
-            fraction=self.corruption_percent,
+            fraction=self.corruption_row_percent,
             sampling="CSCAR"
         ).transform(data)[column]
         return data

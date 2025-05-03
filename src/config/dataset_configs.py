@@ -24,6 +24,7 @@ cleanML_dataset_configs = [
 
 
 from experiment.ExperimentMode import ExperimentMode
+from corruption.CorruptionType import CorruptionType
 
 openML_dataset_configs = [
     {
@@ -31,15 +32,35 @@ openML_dataset_configs = [
         'task': 'classification',
         'description': 'OpenML-CC18 benchmark',
         'test_size': 0.3,
-        'experiment_modes': [ExperimentMode.CLEAN_CLEAN],
-        'corruption_percents': [10, 20, 40, 60]
+        'experiment_modes': [
+            ExperimentMode.CLEAN_CLEAN,
+            ExperimentMode.CLEAN_DIRTY,
+            ExperimentMode.DIRTY_DIRTY
+        ],
+        'corruptions': [
+            CorruptionType.MCAR,
+            CorruptionType.SCAR,
+            CorruptionType.CSCAR,
+        ],
+        'row_corruption_percents': [10, 20, 40],
+        'column_corruption_percents': [20]
     },
     {
         'name': '8f0ea660163b436bbd4abd49665c7b1d',
         'task': 'regression',
         'description': 'OpenML-CTR23 benchmark',
         'test_size': 0.3,
-        'experiment_modes': [ExperimentMode.CLEAN_CLEAN],
-        'corruption_percents': [10, 20, 40, 60]
+        'experiment_modes': [
+            ExperimentMode.CLEAN_CLEAN,
+            ExperimentMode.CLEAN_DIRTY,
+            ExperimentMode.DIRTY_DIRTY
+        ],
+        'corruptions': [
+            CorruptionType.MCAR,
+            CorruptionType.SCAR,
+            CorruptionType.CSCAR,
+        ],
+        'row_corruption_percents': [10, 20, 40],
+        'feature_max_corruption_percent': 20
     },
 ]

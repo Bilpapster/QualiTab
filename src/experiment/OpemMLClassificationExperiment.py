@@ -2,6 +2,7 @@ import time
 import numpy as np
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_score, recall_score
 
+from corruption import CorruptionsManager
 from .ClassificationExperiment import ClassificationExperiment
 from .OpenMLExperiment import OpenMLExperiment
 from config import get_adaptive_inference_limit
@@ -17,6 +18,7 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
             benchmark_configs: dict = None,
             random_seeds: list = None,
             datasets_to_skip: list | set = [],
+            corruptions_manager=CorruptionsManager(),
             debug=False
     ):
         """
@@ -29,7 +31,8 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
             self,
             benchmark_configs=benchmark_configs,
             random_seeds=random_seeds,
-            datasets_to_skip=datasets_to_skip
+            datasets_to_skip=datasets_to_skip,
+            corruptions_manager=corruptions_manager,
         )
         self.debug = debug
 
@@ -37,10 +40,10 @@ class OpenMLClassificationExperiment(ClassificationExperiment, OpenMLExperiment)
         self.log(f"Running experiment with random seed: {self.random_seed}")
 
         self.nest_prefix()
-        for experiment_mode in self.modes_iterator(benchmark_config):
+        for experiment_mode in self.get_modes_and_corruptions_configurations(benchmark_config):
             self.log(f"Running experiment with mode: {experiment_mode}")
             start_time = time.time()
-            self._pollute_data_based_on_mode(experiment_mode)
+            self._corrupt_data_based_on_mode(experiment_mode)
 
             try:
                 self.model.fit(self.X_train, self.y_train)
