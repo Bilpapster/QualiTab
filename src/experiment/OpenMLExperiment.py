@@ -3,7 +3,6 @@ import random
 from abc import ABC, abstractmethod
 
 from .Experiment import Experiment
-from corruption import CorruptionsManager
 
 
 class OpenMLExperiment(Experiment, ABC):
@@ -12,7 +11,6 @@ class OpenMLExperiment(Experiment, ABC):
             benchmark_configs: dict = None,
             random_seeds: list = None,
             datasets_to_skip: list | set = [],
-            corruptions_manager=CorruptionsManager()
     ):
         super().__init__()
         self.benchmark_configs = benchmark_configs
@@ -25,7 +23,6 @@ class OpenMLExperiment(Experiment, ABC):
 
         self.datasets_to_skip = set(datasets_to_skip)
         self.finished_experiments = self.get_finished_experiments()
-        self.corruptions_manager = corruptions_manager
         self.task = None
 
     def load_dataset(self, dataset_config: dict, **kwargs) -> None:

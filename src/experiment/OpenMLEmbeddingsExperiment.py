@@ -1,9 +1,7 @@
 import json
 import time
 
-from corruption import CorruptionsManager, CorruptionType
 from .EmbeddingsExperiment import EmbeddingsExperiment
-from .ExperimentMode import ExperimentMode
 from .OpenMLExperiment import OpenMLExperiment
 from config import get_adaptive_inference_limit
 from utils import connect_to_db, get_GPU_information
@@ -20,7 +18,6 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
             random_seeds: list = None,
             datasets_to_skip: list | set = [],
             n_folds: int = 1,
-            corruptions_manager=CorruptionsManager(),
             debug=False
     ):
         """
@@ -35,7 +32,6 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
             benchmark_configs=benchmark_configs,
             random_seeds=random_seeds,
             datasets_to_skip=datasets_to_skip,
-            corruptions_manager=corruptions_manager,
         )
         self.error_type = None
         self.corrupted_columns = []
