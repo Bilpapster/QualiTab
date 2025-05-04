@@ -29,7 +29,10 @@ BEGIN
             corrupted_columns JSONB,
             corrupted_rows JSONB,
             execution_time DOUBLE PRECISION,
-            tag VARCHAR(255)
+            tag VARCHAR(255),
+            row_corruption_percent SMALLINT,
+            column_corruption_percent SMALLINT,
+            gpu_info JSONB
     );
     END IF;
 

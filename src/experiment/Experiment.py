@@ -4,7 +4,6 @@ import pandas as pd
 from corruption import CorruptionType
 from utils import configure_logging, connect_to_db
 from experiment.ExperimentMode import ExperimentMode
-from corruption.CorruptionsManager import CorruptionsManager
 
 
 class Experiment(ABC):
@@ -23,7 +22,7 @@ class Experiment(ABC):
         self.target_name = None  # the name of the target column in the dataset
         self.model = None # the model to use for training, inference, embeddings, or data generation
 
-        self._prefix = '- - ' # the prefix to use for indentation in the logs
+        self._prefix = '' # the prefix to use for indentation in the logs
 
         self.features = None  # the features of the dataset, aka X (`X_train` and `X_test` together)
         self.targets = None  # the targets of the dataset, aka y (`y_train` and `y_test` together)
@@ -32,24 +31,12 @@ class Experiment(ABC):
         self.X_test = None  # the test features
         self.y_test = None  # the test targets
 
-        self._corruptions_manager = None # the special object storing a list of corruptions to perform
-
-
-    @property
-    def corruptions_manager(self):
-        """
-        Returns the corruptions manager.
-        """
-        return self._corruptions_manager
-
-    @corruptions_manager.setter
-    def corruptions_manager(self, corruptions_manager):
-        """
-        Sets the corruptions manager.
-        """
-        if not isinstance(corruptions_manager, CorruptionsManager):
-            raise TypeError("Corruptions manager must be an instance of CorruptionsManager.")
-        self._corruptions_manager = corruptions_manager
+        self.experiment_mode = None # the mode of the experiment to run (e.g., CLEAN_CLEAN, CLEAN_DIRTY, ...)
+        self.corruption = None # the type of corruption to apply
+        self.row_corruption_percent = None # the percentage of rows to corrupt
+        self.column_corruption_percent = None # the percentage of columns to corrupt
+        self.corrupted_rows = None # the rows that are corrupted
+        self.corrupted_columns = None # the columns that are corrupted
 
     def nest_prefix(self):
         """
@@ -107,6 +94,10 @@ class Experiment(ABC):
         except Exception as e:
             self.log(f"{self._prefix} Error fetching finished experiments: {e}", "error")
             return set()
+
+
+    def does_experiment_exist_in_db(self):
+        return True
 
     def process_finished_experiment_result_row(self, row: tuple) -> str | int:
         """
@@ -338,39 +329,56 @@ class Experiment(ABC):
         #     if experiment_mode in ExperimentMode:  # emit the mode if it is valid (one of the enum values)
         #         yield experiment_mode, corruption_types, corruption_percents # todo update docstring
 
-    def _corrupt_data_based_on_mode(self, experiment_mode: ExperimentMode):
+    def _corrupt_data_based_on_mode(self):
         """
-        Pollutes the data based on the experiment mode.
-        Args:
-            experiment_mode (ExperimentMode): The mode of the experiment to run.
+        Pollutes the data based on the experiment mode and rest configurations (e.g., corruption type)
+        that are saved in the instance variables.
         """
-        # todo probably add corruption percents here and also a corruption object
-        # todo we should also keep track of the corrupted rows and columns max(1, 20%)
+
         if self.random_seed is None:
             raise ValueError("Random seed must be set before polluting data.")
+        if self.corruption is None:
+            raise ValueError("Corruption type must be set before polluting data.")
+        if self.row_corruption_percent is None or self.column_corruption_percent is None:
+            raise ValueError("Corruption percentages must be set before polluting data.")
 
-        match experiment_mode:
+
+        match self.experiment_mode:
             case ExperimentMode.CLEAN_CLEAN:
                 # No pollution needed for clean-clean mode
+                self.corrupted_rows = []
+                self.corrupted_columns = []
                 return
             case ExperimentMode.CLEAN_DIRTY:
-                # todo use the copy package because now is a short copy
-                self.__X_test_original = self.X_test.copy()
-                self.__y_test_original = self.y_test.copy()
-                # todo pollute X_test, y_test
+                self.__X_test_original = self.X_test.copy(deep=True)
+                self.X_test, self.corrupted_rows, self.corrupted_columns = self.corruption.corrupt(
+                    data=self.X_test, random_seed=self.random_seed,
+                    row_percent=self.row_corruption_percent, column_percent=self.column_corruption_percent
+                )
                 return
             case ExperimentMode.DIRTY_CLEAN:
-                self.__X_train_original = self.X_train.copy()
-                self.__y_train_original = self.y_train.copy()
-                # todo pollute X_train, y_train
+                self.__X_train_original = self.X_train.copy(deep=True)
+                self.X_train, self.corrupted_rows, self.corrupted_columns = self.corruption.corrupt(
+                    data=self.X_train, random_seed=self.random_seed,
+                    row_percent=self.row_corruption_percent, column_percent=self.column_corruption_percent
+                )
                 return
             case ExperimentMode.DIRTY_DIRTY:
-                self.__X_test_original = self.X_test.copy()
-                self.__y_test_original = self.y_test.copy()
-                self.__X_train_original = self.X_train.copy()
-                self.__y_train_original = self.y_train.copy()
-                # todo pollute X_train, y_train, X_test, y_test
+                self.__X_train_original = self.X_train.copy(deep=True)
+                self.__X_test_original = self.X_test.copy(deep=True)
+                self.X_train, train_corrupted_rows, train_corrupted_columns = self.corruption.corrupt(
+                    data=self.X_train, random_seed=self.random_seed,
+                    row_percent=self.row_corruption_percent, column_percent=self.column_corruption_percent
+                )
+                self.X_test, test_corrupted_rows, test_corrupted_columns = self.corruption.corrupt(
+                    data=self.X_test, random_seed=self.random_seed,
+                    row_percent=self.row_corruption_percent, column_percent=self.column_corruption_percent
+                )
+                self.corrupted_rows = [train_corrupted_rows, test_corrupted_rows]
+                self.corrupted_columns = [train_corrupted_columns, test_corrupted_columns]
                 return
+            case _:
+                raise ValueError(f"Unknown experiment mode: {self.experiment_mode}. Cannot pollute data.")
 
     def _rollback_data_based_on_mode(self, experiment_mode: ExperimentMode):
         match experiment_mode:
@@ -378,27 +386,24 @@ class Experiment(ABC):
                 # No rollback needed for clean-clean mode
                 return
             case ExperimentMode.CLEAN_DIRTY:
-                # todo use the copy package because now is a short copy
-                self.X_test = self.__X_test_original.copy()
-                self.__delattr__('__X_test_original')
-                self.y_test = self.__y_test_original.copy()
-                self.__delattr__('__y_test_original')
+                self.X_test = self.__X_test_original.copy(deep=True)
+                del self.__X_test_original
+                del self.corrupted_rows
+                del self.corrupted_columns
                 return
             case ExperimentMode.DIRTY_CLEAN:
-                self.X_train = self.__X_train_original.copy()
-                self.__delattr__('__X_train_original')
-                self.y_train = self.__y_train_original.copy()
-                self.__delattr__('__y_train_original')
+                self.X_train = self.__X_train_original.copy(deep=True)
+                del self.__X_train_original
+                del self.corrupted_rows
+                del self.corrupted_columns
                 return
             case ExperimentMode.DIRTY_DIRTY:
-                self.X_test = self.__X_test_original.copy()
-                self.__delattr__('__X_test_original')
-                self.y_test = self.__y_test_original.copy()
-                self.__delattr__('__y_test_original')
-                self.X_train = self.__X_train_original.copy()
-                self.__delattr__('__X_train_original')
-                self.y_train = self.__y_train_original.copy()
-                self.__delattr__('__y_train_original')
+                self.X_test = self.__X_test_original.copy(deep=True)
+                del self.__X_test_original
+                self.X_train = self.__X_train_original.copy(deep=True)
+                del self.__X_train_original
+                del self.corrupted_rows
+                del self.corrupted_columns
                 return
             case _:
                 raise ValueError(f"Unknown experiment mode: {experiment_mode}. Cannot rollback data.")

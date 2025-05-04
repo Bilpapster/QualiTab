@@ -24,3 +24,29 @@ class ExperimentMode(Enum):
                 return [corruption for corruption in candidate_corruptions if corruption in compatible_corruptions]
 
 
+    def is_meaningful(self, corrupted_rows: list, corrupted_columns: list) -> bool:
+        """
+        Check if the experiment mode is meaningful based on the corrupted rows and columns.
+        Args:
+            corrupted_rows (list): List of corrupted rows.
+            corrupted_columns (list): List of corrupted columns.
+        Returns:
+            bool: True if the experiment mode is meaningful, False otherwise.
+        """
+        from itertools import chain
+
+        try:
+            corrupted_rows = list(chain.from_iterable(corrupted_rows)) # flatten the list of lists
+            corrupted_columns = list(chain.from_iterable(corrupted_columns)) # flatten the list of lists
+        except TypeError:
+            # Flattening fails if corrupted_rows or corrupted_columns are not lists of lists. We are OK with that.
+            pass
+
+        # print(f"DEBUG: Corrupted rows inside is_meaningful: {corrupted_rows}")
+        # print(f"DEBUG: Corrupted columns inside is_meaningful: {corrupted_columns}")
+
+        match self:
+            case ExperimentMode.CLEAN_CLEAN:
+                return len(corrupted_rows) == 0 and len(corrupted_columns) == 0
+            case _:
+                return len(corrupted_rows) > 0 and len(corrupted_columns) > 0

@@ -86,6 +86,15 @@ def connect_to_db() -> tuple:
         raise "Error connecting to the database. Please check your connection settings."
 
 
+def get_GPU_information() -> list[tuple]:
+    import torch
+    GPUs = []
+    for i in range(torch.cuda.device_count()):
+        properties = torch.cuda.get_device_properties(i)
+        GPUs.append((properties.name, properties.total_memory))
+    return GPUs
+
+
 def print_openML_report_wrt_tabpfn_limits():
     benchmark_configs = openML_dataset_configs
     for benchmark_config in benchmark_configs:

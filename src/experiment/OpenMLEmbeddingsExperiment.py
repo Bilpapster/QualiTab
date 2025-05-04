@@ -1,12 +1,12 @@
 import json
 import time
-import numpy as np
 
-from corruption import CorruptionsManager
+from corruption import CorruptionsManager, CorruptionType
 from .EmbeddingsExperiment import EmbeddingsExperiment
 from .ExperimentMode import ExperimentMode
 from .OpenMLExperiment import OpenMLExperiment
 from config import get_adaptive_inference_limit
+from utils import connect_to_db, get_GPU_information
 
 
 class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
@@ -42,16 +42,50 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
         self.corrupted_rows = []
         self.debug = debug
 
+    def does_experiment_exist_in_db(self):
+        conn, cursor = connect_to_db()
+        cursor.execute("""
+                       SELECT dataset_name
+                       FROM embeddings_experiments
+                       WHERE dataset_name = %s
+                        AND random_seed = %s
+                        AND error_type = %s
+                        AND row_corruption_percent = %s
+                        AND column_corruption_percent = %s
+                        AND tag = %s
+                       """,
+                       (
+                           self.get_dataset_name_from_dataset_id(self.task.dataset_id),
+                           self.random_seed,
+                           self.corruption.value,
+                           self.row_corruption_percent,
+                           self.column_corruption_percent,
+                           self.experiment_mode.value
+                       )
+        )
+        result = cursor.fetchall()
+        return len(result) > 0
+
     def run_one_experiment(self, benchmark_config=None):
         import numpy as np
 
+        # if the experiment exists already in the database, skip it
+        if self.does_experiment_exist_in_db():
+            self.log(f"Experiment already exists in the database. Skipping this experiment.")
+            return
+
         np.random.seed(self.random_seed)
+        self._corrupt_data_based_on_mode()
 
-
-
+        # If the dataset was not corrupted or the corruption was not applied, skip the experiment
+        if not self.experiment_mode.is_meaningful(self.corrupted_rows, self.corrupted_columns):
+            self.log(f"Experiment mode {self.experiment_mode} is not meaningful.")
+            self.log(f"Corrupted rows: {self.corrupted_rows}")
+            self.log(f"Corrupted columns: {self.corrupted_columns}")
+            self.log(f"Skipping this experiment.")
+            return
 
         start_time = time.time()
-        self._corrupt_data_based_on_mode(self.experiment_mode) # todo here we should also add the corruption percent for rows and columns
 
         try:
             classes = list(set(self.y_train))
@@ -98,12 +132,14 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
             'number_of_features': len(self.X_train.columns),
             'random_seed': self.random_seed,
             'test_embeddings': json.dumps(test_embeddings.tolist()),
-            'error_type': self.error_type,
+            'error_type': self.corruption.value,
             'corrupted_columns': json.dumps(self.corrupted_columns),
             'corrupted_rows': json.dumps(self.corrupted_rows),
             'execution_time': time.time() - start_time,
             'tag': self.experiment_mode.value,
-            'corruption_percent': 0, # todo: important to handle the corruption percent correctly with Jenga
+            'row_corruption_percent': self.row_corruption_percent,
+            'column_corruption_percent': self.column_corruption_percent,
+            'gpu_info': json.dumps(get_GPU_information()),
         }
         self.log(f"Dataset finished. Execution time: {result['execution_time']} seconds.")
         self.write_experiment_result_to_db(result)

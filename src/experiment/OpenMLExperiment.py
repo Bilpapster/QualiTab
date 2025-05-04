@@ -19,8 +19,8 @@ class OpenMLExperiment(Experiment, ABC):
         self.random_seeds = random_seeds
         self.experiment_mode = None
         self.corruption = None
-        self.corruption_row_percent = None
-        self.corruption_column_percent = None
+        self.row_corruption_percent = None
+        self.column_corruption_percent = None
 
 
         self.datasets_to_skip = set(datasets_to_skip)
@@ -118,7 +118,7 @@ class OpenMLExperiment(Experiment, ABC):
                             for corruption_row_percent_index, corruption_row_percent in enumerate(compatible_row_percents):
                                 self.log(f"Corruption percent set to {corruption_row_percent} "
                                          f"({corruption_row_percent_index + 1} of {len(compatible_row_percents)})")
-                                self.corruption_row_percent = corruption_row_percent
+                                self.row_corruption_percent = corruption_row_percent
                                 compatible_column_percents = corruption.get_compatible_corruption_percents_from_candidates(
                                     corruption_column_percents)
 
@@ -126,7 +126,7 @@ class OpenMLExperiment(Experiment, ABC):
                                 for corruption_column_percent_index, corruption_column_percent in enumerate(compatible_column_percents):
                                     self.log(f"Corruption column percent set to {corruption_column_percent} "
                                              f"({corruption_column_percent_index + 1} of {len(corruption_column_percents)})")
-                                    self.corruption_column_percent = corruption_column_percent
+                                    self.column_corruption_percent = corruption_column_percent
                                     self.run_one_experiment() # 10. Run one experiment with the current configuration.
 
                                 self.unnest_prefix() # end of loop for column corruption percents

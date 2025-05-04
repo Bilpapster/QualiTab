@@ -61,7 +61,7 @@ class CorruptionType(Enum):
         categorical_columns = [column for column in data.columns if isinstance(data[column].dtype, pd.CategoricalDtype)]
         numeric_columns = [column for column in data.columns if pd.api.types.is_numeric_dtype(data[column].dtype)]
 
-        corrupted_rows = np.random.choice(data.shape[0], max(int(row_percent * data.shape[0] / 100), 1), replace=False)
+        corrupted_rows = np.random.choice(data.index.to_list(), max(int(row_percent * data.shape[0] / 100), 1), replace=False)
 
         # to be used in corruptions that can be applied to any column (e.g. MCAR)
         corrupted_columns_generic = np.random.choice(
@@ -89,7 +89,7 @@ class CorruptionType(Enum):
             case CorruptionType.MCAR:
                 # missing values is generic and can be applied to any column (categorical or numeric)
                 corrupted_columns = corrupted_columns_generic
-                corrupted_subset = data.iloc[corrupted_rows, corrupted_columns]
+                corrupted_subset = data.loc[corrupted_rows, corrupted_columns]
                 for column in corrupted_columns:
                     corrupted_subset[column] = MissingValues(column=column, fraction=1, missingness='MCAR') \
                         .transform(corrupted_subset)[column]
@@ -100,7 +100,7 @@ class CorruptionType(Enum):
                     return data, [], []  # no numeric columns to corrupt; this should be handled in the experiment mode
 
                 corrupted_columns = corrupted_columns_numeric
-                corrupted_subset = data.iloc[corrupted_rows, corrupted_columns]
+                corrupted_subset = data.loc[corrupted_rows, corrupted_columns]
                 for column in corrupted_columns:
                     corrupted_subset[column] = Scaling(column=column, fraction=1, sampling='MCAR') \
                         .transform(corrupted_subset)[column]
@@ -111,7 +111,7 @@ class CorruptionType(Enum):
                     return data, [], []  # no categorical columns to corrupt; this should be handled in the experiment mode
 
                 corrupted_columns = corrupted_columns_categorical
-                corrupted_subset = data.iloc[corrupted_rows, corrupted_columns]
+                corrupted_subset = data.loc[corrupted_rows, corrupted_columns]
                 """ We need a (deep) copy, so that (after corruption) we can find the actually corrupted rows. 
                 Missing Values & Scaling do not need this; corruption to all specified rows is guaranteed. """
                 corrupted_subset_copy = corrupted_subset.copy(deep=True)
@@ -126,5 +126,13 @@ class CorruptionType(Enum):
                 raise NotImplementedError(f"Corruption for type {self} is not implemented. "
                                           f"Please open us a GitHub issue or (even better) a pull request.")
 
-        corrupted_data.iloc[corrupted_rows, corrupted_columns] = corrupted_subset
+        corrupted_data.loc[corrupted_rows, corrupted_columns] = corrupted_subset
+        try:
+            corrupted_rows, corrupted_columns = corrupted_rows.tolist(), corrupted_columns.tolist()
+        except AttributeError:
+            # it might be the case that corrupted_rows and corrupted_columns are already plain lists (not ndarrays)
+            # print(f"DEBUG: Corrupted rows were already lists: {corrupted_rows}")
+            # print(f"DEBUG: Corrupted columns were already lists: {corrupted_columns}")
+            corrupted_rows, corrupted_columns = list(corrupted_rows), list(corrupted_columns)
+
         return corrupted_data, corrupted_rows, corrupted_columns

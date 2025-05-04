@@ -27,9 +27,11 @@ class EmbeddingsExperiment(Experiment, ABC):
                  corrupted_rows,
                  execution_time,
                  tag,
-                 corruption_percent
+                 row_corruption_percent,
+                 column_corruption_percent,
+                 gpu_info
              )
-             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
              """,
             'vars': (
                 str(uuid.uuid4()),
@@ -45,7 +47,9 @@ class EmbeddingsExperiment(Experiment, ABC):
                 result['corrupted_rows'],
                 result['execution_time'],
                 result['tag'],
-                result['corruption_percent'],
+                result['row_corruption_percent'],
+                result['column_corruption_percent'],
+                result['gpu_info'],
             ),
         }
 
@@ -65,7 +69,7 @@ class EmbeddingsExperiment(Experiment, ABC):
             random_seed, '_', 
             error_type, '_', 
             tag, '_', 
-            corruption_percent
+            row_corruption_percent
         )
         FROM embeddings_experiments 
         """
