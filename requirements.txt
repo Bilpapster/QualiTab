@@ -7,3 +7,5 @@ python-dotenv==1.1.0
 jenga==0.0.1a1
 openml==0.15.1
 psycopg2-binary==2.9.10
+numpy==1.26.4
+scikit-learn==1.6.1

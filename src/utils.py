@@ -95,6 +95,28 @@ def get_GPU_information() -> list[tuple]:
     return GPUs
 
 
+def get_openML_task_mapping(benchmark_name="OpenML-CC18") -> dict:
+    """
+    Retrieves the mapping of OpenML dataset IDs to task IDs for a given benchmark name.
+    Args:
+        benchmark_name (str): The name of the benchmark suite to retrieve tasks from.
+    Returns:
+        dict: A dictionary mapping dataset IDs to task IDs. Note that database stores dataset IDs but OpenML uses
+        task IDs to retrieve the data.
+    """
+    import openml
+
+    tasks = openml.study.get_suite(benchmark_name).tasks
+    mapping = dict()
+
+    for task_id in tasks:
+        task = openml.tasks.get_task(task_id)
+        dataset_id = task.dataset_id
+        mapping[dataset_id] = task_id
+
+    return mapping
+
+
 def print_openML_report_wrt_tabpfn_limits():
     benchmark_configs = openML_dataset_configs
     for benchmark_config in benchmark_configs:

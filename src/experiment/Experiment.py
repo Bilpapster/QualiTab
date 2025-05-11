@@ -66,7 +66,7 @@ class Experiment(ABC):
             case _:
                 raise ValueError(f"Unknown log level: {level}. Use 'info', 'error', or 'warning'.")
 
-    @abstractmethod
+    # @abstractmethod
     def insertion_query(self, result: dict) -> dict:
         """
         Returns the SQL query for inserting experiment results into the database
@@ -74,7 +74,7 @@ class Experiment(ABC):
         """
         pass
 
-    @abstractmethod
+    # @abstractmethod
     def finished_experiments_query(self) -> str:
         """
         Returns the SQL query for fetching finished datasets from the database.
@@ -281,7 +281,7 @@ class Experiment(ABC):
 
         return TabPFNClassifier() if dataset_config['task'] == 'classification' else TabPFNRegressor()
 
-    @abstractmethod
+    # @abstractmethod
     def load_dataset(self, dataset_config: dict, **kwargs) -> tuple:
         """
         Loads the dataset based on the provided configuration.
@@ -295,7 +295,7 @@ class Experiment(ABC):
 
         return get_seeds_from_env_or_else_default()
 
-    @abstractmethod
+    # @abstractmethod
     def run(self):
         """
         Main method to run the experiment.

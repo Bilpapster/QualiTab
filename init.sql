@@ -53,4 +53,21 @@ BEGIN
             tag VARCHAR(255)
     );
     END IF;
+
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_tables WHERE tablename = 'embedding_evaluation_metrics') THEN
+        CREATE TABLE embedding_evaluation_metrics (
+            evaluation_id UUID PRIMARY KEY,
+            experiment_id UUID REFERENCES embeddings_experiments(experiment_id),
+            evaluation_type VARCHAR(255) NOT NULL, -- e.g., 'linear probing', 'clustering'
+            metric_name VARCHAR(255) NOT NULL,     -- e.g., 'ROC AUC', 'Purity', 'Avg Cosine Similarity (k=5)'
+            metric_value DOUBLE PRECISION NOT NULL,
+            weights JSONB,                         -- Optional: to store classifier weights or cluster centroids
+            other_info JSONB,                      -- Optional: for any other relevant information
+            evaluated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+    END IF;
+
+    CREATE INDEX IF NOT EXISTS idx_experiment_id ON embedding_evaluation_metrics (experiment_id);
+    CREATE INDEX IF NOT EXISTS idx_evaluation_type ON embedding_evaluation_metrics (evaluation_type);
+    CREATE INDEX IF NOT EXISTS idx_metric_name ON embedding_evaluation_metrics (metric_name);
 END $$;

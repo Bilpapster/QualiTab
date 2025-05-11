@@ -1,11 +1,11 @@
 import openml
 import random
-from abc import ABC, abstractmethod
+# from abc import ABC, abstractmethod
 
 from .Experiment import Experiment
 
 
-class OpenMLExperiment(Experiment, ABC):
+class OpenMLExperiment(Experiment):
     def __init__(
             self,
             benchmark_configs: dict = None,
@@ -145,7 +145,7 @@ class OpenMLExperiment(Experiment, ABC):
         """
         return f"OpenML-{dataset_id}"
 
-    @abstractmethod
+    # @abstractmethod
     def run_one_experiment(self, benchmark_config=None):
         # random seed, data split to X/y train/test and model can be found in instance attributes
         pass
