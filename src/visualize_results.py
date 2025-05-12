@@ -53,9 +53,34 @@ def plot_metric_across_corruption(df, metric_name, title_prefix=""):
     plt.title(f'{title_prefix} {metric_name} vs. Row Corruption')
     plt.xlabel('Row Corruption Percentage')
     plt.ylabel(metric_name)
-    plt.legend(title='Error Type & Scenario')
+    plt.legend(title='Error Type & Scenario', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.grid(True)
     plt.tight_layout()
+    plt.show()
+
+def plot_metric_faceted_by_error(df, metric_name, title_prefix=""):
+    """
+    Generates a grid of line plots of a metric across different corruption rates,
+    faceted by error type.
+    """
+    g = sns.relplot(
+        data=df,
+        x='row_corruption_percent',
+        y='metric_value',
+        hue='tag',
+        style='tag',
+        col='error_type',
+        marker='o',
+        kind='line',
+        col_wrap=3,  # Adjust for the number of columns in the grid
+        height=4,
+        aspect=1.2
+    )
+    g.fig.suptitle(f'{title_prefix} {metric_name} vs. Row Corruption (by Error Type)', y=1.02)
+    g.set_axis_labels("Row Corruption Percentage", metric_name)
+    g.set_titles("Error Type: {col_name}")
+    g.add_legend(title='Scenario')
+    g.tight_layout()
     plt.show()
 
 def main():
@@ -65,16 +90,19 @@ def main():
     roc_auc_df_all = fetch_evaluation_data(conn, metric_name='ROC AUC', evaluation_type='linear probing fit to all')
     if not roc_auc_df_all.empty:
         plot_metric_across_corruption(roc_auc_df_all, metric_name='ROC AUC (Linear Probing - All)', title_prefix="Average")
+        plot_metric_faceted_by_error(roc_auc_df_all, metric_name='ROC AUC (Linear Probing - All)')
 
     # Fetch Purity data for clustering (all test data)
     purity_df_all = fetch_evaluation_data(conn, metric_name='Purity', evaluation_type='clustering all test')
     if not purity_df_all.empty:
         plot_metric_across_corruption(purity_df_all, metric_name='Purity (Clustering - All)', title_prefix="Average")
+        plot_metric_faceted_by_error(purity_df_all, metric_name='Purity (Clustering - All)')
 
     # Fetch Average Cosine Similarity data for KNN (k=5, all test data)
     knn_df_k5_all = fetch_evaluation_data(conn, metric_name='Avg Cosine Similarity (k=5) (all)', evaluation_type='knn similarity')
     if not knn_df_k5_all.empty:
         plot_metric_across_corruption(knn_df_k5_all, metric_name='Avg Cosine Similarity (k=5 - All)', title_prefix="Average")
+        plot_metric_faceted_by_error(knn_df_k5_all, metric_name='Avg Cosine Similarity (k=5 - All)')
 
     conn.close()
 
