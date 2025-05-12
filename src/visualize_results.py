@@ -1,5 +1,6 @@
 import psycopg2
 import pandas as pd
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from utils import connect_to_db
@@ -44,6 +45,77 @@ def fetch_evaluation_data(conn, metric_name, evaluation_type=None, tag=None, err
     cursor.close()
     return df
 
+def fetch_weights_data(conn, evaluation_type, tag=None, error_type=None):
+    """
+    Fetches weights data from the database for a specific linear probing evaluation type.
+    """
+    conn, cursor = connect_to_db()
+    query = f"""
+        SELECT
+            e.dataset_name,
+            e.tag,
+            e.error_type,
+            e.row_corruption_percent,
+            eem.weights
+        FROM
+            {EXPERIMENTS_TABLE} e
+        JOIN
+            {EVALUATION_TABLE} eem ON e.experiment_id = eem.experiment_id
+        WHERE
+            eem.evaluation_type = %s
+            AND eem.weights IS NOT NULL
+    """
+    params = [evaluation_type]
+    if tag:
+        query += " AND e.tag = %s"
+        params.append(tag)
+    if error_type:
+        query += " AND e.error_type = %s"
+        params.append(error_type)
+
+    cursor.execute(query, tuple(params))
+    columns = [desc[0] for desc in cursor.description]
+    df = pd.DataFrame(cursor.fetchall(), columns=columns)
+    cursor.close()
+    return df
+
+def plot_weights_heatmap_grid(df, evaluation_type_str):
+    """
+    Generates a grid of heatmaps visualizing the weights of the linear classifier,
+    faceted by error type and scenario.
+    """
+    def process_weights(row):
+        # weights = json.loads(row['weights'])
+        weights = row['weights']
+        # Handle different shapes of weight arrays (binary vs. multi-class)
+        if isinstance(weights[0], list):
+            return np.array(weights)
+        else:
+            return np.array([weights]) # Make it 2D for consistent plotting
+
+    df['weights_array'] = df.apply(process_weights, axis=1)
+
+    num_embeddings = df['weights_array'].iloc[0].shape[1] if not df.empty and df['weights_array'].iloc[0].ndim > 1 else None
+    if num_embeddings is None:
+        print(f"Warning: No weights to visualize for {evaluation_type_str}.")
+        return
+
+    g = sns.FacetGrid(df, col='error_type', row='tag', height=3, aspect=1.5, sharex=True, sharey=True)
+
+    def heatmap_on_grid(data, color, **kwargs):
+        if not data.empty:
+            weights = data['weights_array'].iloc[0]
+            sns.heatmap(weights, cmap='coolwarm', cbar_kws={'label': 'Weight Value'}, **kwargs)
+            plt.yticks(np.arange(weights.shape[0]) + 0.5, labels=[f'Class {i+1}' for i in range(weights.shape[0])], rotation=0)
+            plt.xticks([]) # Remove x-axis ticks for better readability in grid
+
+    g.map_dataframe(heatmap_on_grid, linewidth=0.5, linecolor='lightgray')
+    g.set_titles(row_template="Scenario: {row_name}", col_template="Error Type: {col_name}")
+    g.set_ylabels("Class")
+    g.fig.suptitle(f'Linear Classifier Weights ({evaluation_type_str}) by Error Type and Scenario', y=1.02)
+    g.tight_layout()
+    plt.show()
+
 def plot_metric_across_corruption(df, metric_name, title_prefix=""):
     """
     Generates line plots of a metric across different corruption rates, grouped by error type and scenario.
@@ -86,23 +158,20 @@ def plot_metric_faceted_by_error(df, metric_name, title_prefix=""):
 def main():
     cursor, conn = connect_to_db()
 
-    # Example: Fetch ROC AUC data for linear probing (all test data)
-    roc_auc_df_all = fetch_evaluation_data(conn, metric_name='ROC AUC', evaluation_type='linear probing fit to all')
-    if not roc_auc_df_all.empty:
-        plot_metric_across_corruption(roc_auc_df_all, metric_name='ROC AUC (Linear Probing - All)', title_prefix="Average")
-        plot_metric_faceted_by_error(roc_auc_df_all, metric_name='ROC AUC (Linear Probing - All)')
+    # Visualize weights for linear probing on all test data
+    weights_df_all = fetch_weights_data(conn, evaluation_type='linear probing fit to all')
+    if not weights_df_all.empty:
+        plot_weights_heatmap_grid(weights_df_all, 'Fit to All Test Data')
 
-    # Fetch Purity data for clustering (all test data)
-    purity_df_all = fetch_evaluation_data(conn, metric_name='Purity', evaluation_type='clustering all test')
-    if not purity_df_all.empty:
-        plot_metric_across_corruption(purity_df_all, metric_name='Purity (Clustering - All)', title_prefix="Average")
-        plot_metric_faceted_by_error(purity_df_all, metric_name='Purity (Clustering - All)')
+    # Visualize weights for linear probing (unaffected -> corrupted)
+    weights_df_unaffected_corrupted = fetch_weights_data(conn, evaluation_type='linear probing unaffected-corrupted')
+    if not weights_df_unaffected_corrupted.empty:
+        plot_weights_heatmap_grid(weights_df_unaffected_corrupted, 'Fit Unaffected, Predict Corrupted')
 
-    # Fetch Average Cosine Similarity data for KNN (k=5, all test data)
-    knn_df_k5_all = fetch_evaluation_data(conn, metric_name='Avg Cosine Similarity (k=5) (all)', evaluation_type='knn similarity')
-    if not knn_df_k5_all.empty:
-        plot_metric_across_corruption(knn_df_k5_all, metric_name='Avg Cosine Similarity (k=5 - All)', title_prefix="Average")
-        plot_metric_faceted_by_error(knn_df_k5_all, metric_name='Avg Cosine Similarity (k=5 - All)')
+    # Visualize weights for linear probing (corrupted -> unaffected)
+    weights_df_corrupted_unaffected = fetch_weights_data(conn, evaluation_type='linear probing corrupted-unaffected')
+    if not weights_df_corrupted_unaffected.empty:
+        plot_weights_heatmap_grid(weights_df_corrupted_unaffected, 'Fit Corrupted, Predict Unaffected')
 
     conn.close()
 
