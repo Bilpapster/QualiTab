@@ -61,12 +61,20 @@ def plot_metric_across_corruption(df, metric_name, title_prefix=""):
 def main():
     cursor, conn = connect_to_db()
 
-    # Example: Fetch ROC AUC data for linear probing
-    roc_auc_df = fetch_evaluation_data(conn, metric_name='ROC AUC', evaluation_type='linear probing fit to all')
-    if not roc_auc_df.empty:
-        plot_metric_across_corruption(roc_auc_df, metric_name='ROC AUC (Linear Probing - All)', title_prefix="Average")
+    # Example: Fetch ROC AUC data for linear probing (all test data)
+    roc_auc_df_all = fetch_evaluation_data(conn, metric_name='ROC AUC', evaluation_type='linear probing fit to all')
+    if not roc_auc_df_all.empty:
+        plot_metric_across_corruption(roc_auc_df_all, metric_name='ROC AUC (Linear Probing - All)', title_prefix="Average")
 
-    # We will add more plotting functions and calls here
+    # Fetch Purity data for clustering (all test data)
+    purity_df_all = fetch_evaluation_data(conn, metric_name='Purity', evaluation_type='clustering all test')
+    if not purity_df_all.empty:
+        plot_metric_across_corruption(purity_df_all, metric_name='Purity (Clustering - All)', title_prefix="Average")
+
+    # Fetch Average Cosine Similarity data for KNN (k=5, all test data)
+    knn_df_k5_all = fetch_evaluation_data(conn, metric_name='Avg Cosine Similarity (k=5) (all)', evaluation_type='knn similarity')
+    if not knn_df_k5_all.empty:
+        plot_metric_across_corruption(knn_df_k5_all, metric_name='Avg Cosine Similarity (k=5 - All)', title_prefix="Average")
 
     conn.close()
 
