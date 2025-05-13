@@ -129,15 +129,25 @@ for i, ax in enumerate(axs):
     # Plot the horizontal dashed green line
     ax.axhline(y=horizontal_line_yvals[i], color='green', linestyle=':', linewidth=1.5)
 
-    # --- Axis Styling ---
-    # Set y-axis limits
-    ax.set_ylim(min_y_in_plot - (1 - max_y_in_plot), 1.0) # center the y-axis around 0.5 for visually better plot
+    lower_ylim = min_y_in_plot - (max_y_in_plot - min_y_in_plot) * 0.1
+    upper_ylim = max_y_in_plot + (max_y_in_plot - min_y_in_plot) * 0.1
+    ax.set_ylim((lower_ylim, upper_ylim))  # center the y-axis around 0.5 for visually better plot with wider range of y-values
 
     # Set x-axis limits (+-5 from min/max x_values)
     ax.set_xlim(np.min(flatten_extend(x_values_for_subplot)) - 0.05, np.max(flatten_extend(x_values_for_subplot)) + 0.05)
 
     # Set x-ticks to only show actual data points
     ax.set_xticks(x_values_for_subplot[0])
+    y_ticks = [
+        lower_ylim + (upper_ylim - lower_ylim) / 4,
+        lower_ylim + (upper_ylim - lower_ylim)/2,
+        upper_ylim
+    ]
+    number_of_decimal_places = 2
+    if round(y_ticks[0], number_of_decimal_places) == round(y_ticks[1], number_of_decimal_places) or round(y_ticks[1], number_of_decimal_places) == round(y_ticks[2], number_of_decimal_places):
+        number_of_decimal_places = 3 # todo find a better way because this is disgusting
+
+    ax.set_yticks([round(tick, number_of_decimal_places) for tick in y_ticks])  # Set y-ticks to be in steps of 0.1
     # Optional: Rotate x-tick labels if they overlap
     # ax.tick_params(axis='x', rotation=45)
 
