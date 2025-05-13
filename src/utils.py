@@ -159,7 +159,11 @@ def print_openML_report_wrt_tabpfn_limits():
             print(f"\tToo many targets: {nof_datasets_with_too_many_targets:9} ({nof_datasets_with_too_many_targets / nof_tasks:.2%})")
         print()
 
-def fetch_baseline_metric_value(conn, evaluation_type: str = None, metric_name: str = None, tag: str = 'CLEAN_CLEAN'):
+def fetch_baseline_metric_value(
+    conn, evaluation_type: str = None, metric_name: str = None, tag: str = 'CLEAN_CLEAN',
+    train_size_max: int = None, train_size_min: int = None,
+    test_size_max: int = None, test_size_min: int = None
+):
     cursor = conn.cursor()
     query = f"""
     SELECT AVG(metric_value) AS baseline_metric_value
@@ -167,16 +171,24 @@ def fetch_baseline_metric_value(conn, evaluation_type: str = None, metric_name: 
     ON ex.experiment_id = ev.experiment_id
     WHERE ex.tag = '{tag}'
     """
-    if evaluation_type:
-        query += f" AND ev.evaluation_type = '{evaluation_type}'"
-    if metric_name:
-        query += f" AND ev.metric_name = '{metric_name}'"
+    query += append_parameters_to_query(
+        evaluation_type=evaluation_type,
+        metric_name=metric_name,
+        train_size_max=train_size_max,
+        train_size_min=train_size_min,
+        test_size_max=test_size_max,
+        test_size_min=test_size_min
+    )
 
     cursor.execute(query)
     return cursor.fetchall()[0][0]
 
 
-def fetch_corrupted_metric_values(conn, evaluation_type: str = None, metric_name: str = None, tag: str = 'DIRTY_DIRTY'):
+def fetch_corrupted_metric_values(
+        conn, evaluation_type: str = None, metric_name: str = None, tag: str = 'DIRTY_DIRTY',
+        train_size_max: int = None, train_size_min: int = None,
+        test_size_max: int = None, test_size_min: int = None
+):
     import pandas as pd
 
     cursor = conn.cursor()
@@ -186,11 +198,18 @@ def fetch_corrupted_metric_values(conn, evaluation_type: str = None, metric_name
     ON ex.experiment_id = ev.experiment_id
     WHERE ex.tag = '{tag}'
     """
-    if evaluation_type:
-        query += f" AND ev.evaluation_type = '{evaluation_type}'"
-    if metric_name:
-        query += f" AND ev.metric_name = '{metric_name}'"
+
+    query += append_parameters_to_query(
+        evaluation_type=evaluation_type,
+        metric_name=metric_name,
+        train_size_max=train_size_max,
+        train_size_min=train_size_min,
+        test_size_max=test_size_max,
+        test_size_min=test_size_min
+    )
+
     query += " GROUP BY type_rate"
+
     cursor.execute(query)
     columns = [desc[0] for desc in cursor.description]
     df = pd.DataFrame(cursor.fetchall(), columns=columns)
@@ -216,3 +235,23 @@ def fetch_corrupted_metric_values(conn, evaluation_type: str = None, metric_name
             'values': group['metric_value'].tolist()
         }
     return result
+
+def append_parameters_to_query(
+    evaluation_type: str = None, metric_name: str = None,
+    train_size_max: int = None, train_size_min: int = None,
+    test_size_max: int = None, test_size_min: int = None
+):
+    query_suffix = ""
+    if train_size_max:
+        query_suffix += f" AND ex.train_size <= {train_size_max}"
+    if train_size_min:
+        query_suffix += f" AND ex.train_size >= {train_size_min}"
+    if test_size_max:
+        query_suffix += f" AND ex.test_size <= {test_size_max}"
+    if test_size_min:
+        query_suffix += f" AND ex.test_size >= {test_size_min}"
+    if evaluation_type:
+        query_suffix += f" AND ev.evaluation_type = '{evaluation_type}'"
+    if metric_name:
+        query_suffix += f" AND ev.metric_name = '{metric_name}'"
+    return query_suffix

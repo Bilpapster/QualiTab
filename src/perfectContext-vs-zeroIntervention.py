@@ -146,7 +146,7 @@ for i, ax in enumerate(axs):
             line, = ax.plot(x_values_for_error_type_in_subplot, y_values_for_error_type_in_subplot,
                             marker=markers[error_types[line_idx]],
                             color=colors[error_types[line_idx]],
-                            linestyle='-',
+                            linestyle=linestyles[scenario_idx],
                             label=line_labels[error_types[line_idx]])  # Add label for legend handle creation
 
             # Store handles only from the first plot for the legend
@@ -155,7 +155,7 @@ for i, ax in enumerate(axs):
                 legend_handles.append(line)
 
     # Plot the horizontal dashed green line
-    ax.axhline(y=horizontal_line_yvals[i], color='green', linestyle='--', linewidth=1.5)
+    ax.axhline(y=horizontal_line_yvals[i], color='green', linestyle=':', linewidth=1.5)
 
     # --- Axis Styling ---
     # Set y-axis limits
