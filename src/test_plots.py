@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.lines as mlines
 
+import utils
+
+
 def fetch_baseline_metric_value(conn, evaluation_type: str = None, metric_name: str = None, tag: str = 'CLEAN_CLEAN'):
     cursor = conn.cursor()
     query = f"""
@@ -18,6 +21,7 @@ def fetch_baseline_metric_value(conn, evaluation_type: str = None, metric_name: 
 
     cursor.execute(query)
     return cursor.fetchall()[0][0]
+
 
 def fetch_corrupted_metric_values(conn, evaluation_type: str = None, metric_name: str = None, tag: str = 'DIRTY_DIRTY'):
     cursor = conn.cursor()
@@ -58,33 +62,74 @@ def fetch_corrupted_metric_values(conn, evaluation_type: str = None, metric_name
         }
     return result
 
+
 # --- Configuration ---
-num_plots = 6
-num_lines_per_plot = 3
-num_points = 3 # Number of points for each line
-x_values = np.arange(num_points)
+
 
 # Define consistent colors (publication-friendly, no green) and markers
 # Using seaborn muted palette colors (blue, orange, purple)
-colors = ['#4878d0', '#ee854a', '#9d6acc']
-markers = ['o', 's', '^']
-line_labels = ['Type A', 'Type B', 'Type C'] # Labels for the data lines in the legend
+
+error_types = ['MCAR', 'SCAR', 'CSCAR']  # Error types for the lines
+evaluation_methods_for_ax_titles = [
+    '1-NN Similarity',
+    '3-NN Similarity',
+    '5-NN Similarity',
+    '10-NN Similarity',
+    'Linear Probing',
+    'k-means',
+]
+
+evaluation_types_names_for_queries = [
+    ('knn similarity', 'Avg Cosine Similarity (k=1) (all)'),
+    ('knn similarity', 'Avg Cosine Similarity (k=3) (all)'),
+    ('knn similarity', 'Avg Cosine Similarity (k=5) (all)'),
+    ('knn similarity', 'Avg Cosine Similarity (k=10) (all)'),
+    ('linear probing fit to all', 'ROC AUC'),
+    ('clustering all test', 'Purity'),
+]
+
+colors = {
+    error_types[0]: '#4878d0',
+    error_types[1]: '#ee854a',
+    error_types[2]: '#9d6acc'}
+
+markers = {
+    error_types[0]: 'o',
+    error_types[1]: 's',
+    error_types[2]: '^'
+}
+
+line_labels = {  # Labels for the data lines in the legend
+    error_types[0]: 'missing values',
+    error_types[1]: 'scaling',
+    error_types[2]: 'categorical shift'
+}
+
+num_plots = len(evaluation_methods_for_ax_titles)  # Number of subplots
+num_lines_per_plot = len(error_types)
+num_points = 3  # Number of points for each line
+x_values = np.arange(num_points)
+conn, cursor = utils.connect_to_db()
 
 # --- Data Generation ---
 # Create random y-data for each plot and each line
 # Ensure data is somewhat within the 0-1 range for y-limits, but can vary
-np.random.seed(42) # for reproducible random data
+np.random.seed(42)  # for reproducible random data
 all_plot_data = []
 for _ in range(num_plots):
-    plot_lines_data = [np.random.rand(num_points) * 0.6 + 0.3 for _ in range(num_lines_per_plot)] # data mostly between 0.3 and 0.9
+    plot_lines_data = [np.random.rand(num_points) * 0.6 + 0.3 for _ in
+                       range(num_lines_per_plot)]  # data mostly between 0.3 and 0.9
     all_plot_data.append(plot_lines_data)
 
 # Random y-values for the horizontal green dashed line in each plot
-horizontal_line_yvals = np.random.rand(num_plots) * 0.5 + 0.4 # Random values between 0.4 and 0.9
+horizontal_line_yvals = [
+    fetch_baseline_metric_value(conn, evaluation_type=evaluation_type, metric_name=metric_name)
+    for evaluation_type, metric_name in evaluation_types_names_for_queries
+]
 
 # --- Plotting ---
 # Create the figure and axes grid
-fig, axs = plt.subplots(1, num_plots, figsize=(16, 4), sharey=False) # Adjust figsize as needed
+fig, axs = plt.subplots(1, num_plots, figsize=(16, 4), sharey=False)  # Adjust figsize as needed
 
 # Ensure axs is always iterable, even if num_plots is 1
 if num_plots == 1:
@@ -95,18 +140,18 @@ legend_handles = []
 
 # Iterate through each subplot axis
 for i, ax in enumerate(axs):
-    min_y_in_plot = float('inf') # Keep track of min y-value for this specific plot
+    min_y_in_plot = float('inf')  # Keep track of min y-value for this specific plot
 
     # Plot the 3 data lines
     for line_idx in range(num_lines_per_plot):
         y_values = all_plot_data[i][line_idx]
-        min_y_in_plot = min(min_y_in_plot, np.min(y_values)) # Update minimum y
+        min_y_in_plot = min(min_y_in_plot, np.min(y_values))  # Update minimum y
 
         line, = ax.plot(x_values, y_values,
-                        marker=markers[line_idx],
-                        color=colors[line_idx],
+                        marker=markers[error_types[line_idx]],
+                        color=colors[error_types[line_idx]],
                         linestyle='-',
-                        label=line_labels[line_idx]) # Add label for legend handle creation
+                        label=line_labels[error_types[line_idx]])  # Add label for legend handle creation
 
         # Store handles only from the first plot for the legend
         if i == 0:
@@ -133,12 +178,11 @@ for i, ax in enumerate(axs):
     # Customize spines (remove top and right frame lines)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(True)   # Keep left spine
-    ax.spines['bottom'].set_visible(True) # Keep bottom spine
+    ax.spines['left'].set_visible(True)  # Keep left spine
+    ax.spines['bottom'].set_visible(True)  # Keep bottom spine
 
     # Add title below the plot (using xlabel position)
-    ax.set_xlabel(f"Dummy Title {i+1}", labelpad=15) # labelpad adds space between axis and title
-
+    ax.set_xlabel(evaluation_methods_for_ax_titles[i], labelpad=15)  # labelpad adds space between axis and title
 
 # --- Shared Legend ---
 # Create dummy lines for the legend items that are not plotted data
@@ -154,16 +198,15 @@ all_legend_handles = legend_handles + [ideal_line, perfect_line]
 # Adjust bbox_to_anchor y-value (e.g., -0.2, -0.3) to position it correctly below the titles
 # The number of columns (ncols) should match the number of legend items for a horizontal layout
 fig.legend(handles=all_legend_handles,
-           loc='lower center',           # Position center align at the bottom
+           loc='lower center',  # Position center align at the bottom
            bbox_to_anchor=(0.5, -0.25),  # Adjust Y value (-0.25) to control distance below plots
-           ncol=len(all_legend_handles), # Number of columns = number of items
-           frameon=False)                # Remove legend frame
+           ncol=len(all_legend_handles),  # Number of columns = number of items
+           frameon=False)  # Remove legend frame
 
 # --- Final Adjustments ---
 # Adjust layout to prevent overlap. May need tweaking depending on figure size and content.
 # Using subplots_adjust might be better than tight_layout when placing a fig.legend manually.
-fig.subplots_adjust(bottom=0.3) # Increase bottom margin to make space for titles and legend
+fig.subplots_adjust(bottom=0.3)  # Increase bottom margin to make space for titles and legend
 
-
-plt.savefig("publication_friendly_plot.png", dpi=300, bbox_inches='tight') # Save the figure
+plt.savefig("publication_friendly_plot.png", dpi=300, bbox_inches='tight')  # Save the figure
 plt.show()
