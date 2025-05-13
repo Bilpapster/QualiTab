@@ -4,6 +4,8 @@ import matplotlib.lines as mlines
 
 from utils import connect_to_db, flatten_extend, fetch_baseline_metric_value, fetch_corrupted_metric_values
 
+TRAIN_SIZE_MIN = 0
+TRAIN_SIZE_MAX = 10000
 
 # --- Configuration ---
 plt.rcParams['font.size'] = '14'
@@ -20,6 +22,8 @@ markers = {
     error_types[1]: 's',
     error_types[2]: '^'
 }
+
+linestyles = ['-', '--']  # Different line styles for each error scenario ['zero intervention', 'perfect context']
 
 line_labels = {  # Labels for the data lines in the legend
     error_types[0]: 'missing values',
@@ -55,7 +59,7 @@ y_labels = [
 ]
 
 evaluation_types_names_for_queries = [
-    ('knn similarity', 'Avg Cosine Similarity (k=1) (all)'),
+    ('knn similarity', 'Avg Cosine Similarity (k=1) (all)'), # todo replace with 'corrupted' when finished
     ('knn similarity', 'Avg Cosine Similarity (k=3) (all)'),
     ('knn similarity', 'Avg Cosine Similarity (k=5) (all)'),
     ('knn similarity', 'Avg Cosine Similarity (k=10) (all)'),
@@ -64,11 +68,24 @@ evaluation_types_names_for_queries = [
 ]
 
 conn, cursor = connect_to_db()
-corrupted_metric_values_dicts = [
+zero_intervention_metric_values_dicts = [
     fetch_corrupted_metric_values(
         conn, evaluation_type=evaluation_type,
-        metric_name=str(metric_name).replace('all', 'unaffected'),
-        tag="DIRTY_DIRTY"
+        metric_name=str(metric_name).replace('all', 'corrupted'),
+        train_size_max=TRAIN_SIZE_MAX,
+        train_size_min=TRAIN_SIZE_MIN,
+        tag="DIRTY_DIRTY",
+    )
+    for evaluation_type, metric_name in evaluation_types_names_for_queries
+]
+
+perfect_context_metric_values_dicts = [
+    fetch_corrupted_metric_values(
+        conn, evaluation_type=evaluation_type,
+        metric_name=str(metric_name).replace('all', 'corrupted'),
+        train_size_max=TRAIN_SIZE_MAX,
+        train_size_min=TRAIN_SIZE_MIN,
+        tag="CLEAN_DIRTY",
     )
     for evaluation_type, metric_name in evaluation_types_names_for_queries
 ]
@@ -76,12 +93,19 @@ corrupted_metric_values_dicts = [
 num_plots = len(evaluation_methods_for_ax_titles)  # Number of subplots
 num_lines_per_plot = len(error_types)
 
-x_values = [
-    [dictionary[error_type]['rates'] for error_type in error_types] for dictionary in corrupted_metric_values_dicts
+x_values = [ # x-values are the same for both zero_intervention and perfect context
+    [dictionary[error_type]['rates'] for error_type in error_types] for dictionary in zero_intervention_metric_values_dicts
 ]
-y_values = [
-    [dictionary[error_type]['values'] for error_type in error_types] for dictionary in corrupted_metric_values_dicts
+
+y_values_zero_intervention = [
+    [dictionary[error_type]['values'] for error_type in error_types] for dictionary in zero_intervention_metric_values_dicts
 ]
+
+y_values_perfect_context = [
+    [dictionary[error_type]['values'] for error_type in error_types] for dictionary in perfect_context_metric_values_dicts
+]
+
+y_values_for_scenarios = [y_values_zero_intervention, y_values_perfect_context]
 
 # y-values for the horizontal green dashed line in each plot
 horizontal_line_yvals = [
@@ -104,30 +128,34 @@ legend_handles = []
 
 # Iterate through each subplot axis
 for i, ax in enumerate(axs):
-    min_y_in_plot = float('inf')  # Keep track of min y-value for this specific plot
-    max_y_in_plot = float('-inf')  # Keep track of max y-value for this specific plot
-    x_values_for_subplot = np.array(x_values[i], dtype=float) / 100
-    y_values_for_subplot = y_values[i]
+
+    for scenario_idx, y_values in enumerate(y_values_for_scenarios):
+
+        min_y_in_plot = float('inf')  # Keep track of min y-value for this specific plot
+        max_y_in_plot = float('-inf')  # Keep track of max y-value for this specific plot
+        x_values_for_subplot = np.array(x_values[i], dtype=float) / 100
+        y_values_for_subplot = y_values[i]
 
     # Plot the 3 data lines
-    for line_idx in range(num_lines_per_plot): # essentially for error type in error types
-        x_values_for_error_type_in_subplot = x_values_for_subplot[line_idx]
-        y_values_for_error_type_in_subplot = y_values_for_subplot[line_idx]
-        min_y_in_plot = min(min_y_in_plot, np.min(y_values_for_error_type_in_subplot), horizontal_line_yvals[i])  # Update minimum y
-        max_y_in_plot = max(max_y_in_plot, np.max(y_values_for_error_type_in_subplot), horizontal_line_yvals[i])  # Update maximum y
+        for line_idx in range(num_lines_per_plot): # essentially for error type in error types
+            x_values_for_error_type_in_subplot = x_values_for_subplot[line_idx]
+            y_values_for_error_type_in_subplot = y_values_for_subplot[line_idx]
+            min_y_in_plot = min(min_y_in_plot, np.min(y_values_for_error_type_in_subplot), horizontal_line_yvals[i])  # Update minimum y
+            max_y_in_plot = max(max_y_in_plot, np.max(y_values_for_error_type_in_subplot), horizontal_line_yvals[i])  # Update maximum y
 
-        line, = ax.plot(x_values_for_error_type_in_subplot, y_values_for_error_type_in_subplot,
-                        marker=markers[error_types[line_idx]],
-                        color=colors[error_types[line_idx]],
-                        linestyle='-',
-                        label=line_labels[error_types[line_idx]])  # Add label for legend handle creation
+            line, = ax.plot(x_values_for_error_type_in_subplot, y_values_for_error_type_in_subplot,
+                            marker=markers[error_types[line_idx]],
+                            color=colors[error_types[line_idx]],
+                            linestyle='-',
+                            label=line_labels[error_types[line_idx]])  # Add label for legend handle creation
 
-        # Store handles only from the first plot for the legend
-        if i == 0:
-            legend_handles.append(line)
+            # Store handles only from the first plot for the legend
+            if scenario_idx == 0 and i ==0:
+                # zero intervention should be the first and perfect context the second scenario
+                legend_handles.append(line)
 
     # Plot the horizontal dashed green line
-    ax.axhline(y=horizontal_line_yvals[i], color='green', linestyle=':', linewidth=1.5)
+    ax.axhline(y=horizontal_line_yvals[i], color='green', linestyle='--', linewidth=1.5)
 
     # --- Axis Styling ---
     # Set y-axis limits
@@ -157,12 +185,18 @@ for i, ax in enumerate(axs):
 
 # --- Shared Legend ---
 # Create dummy lines for the legend items that are not plotted data
-ideal_line = mlines.Line2D([], [], color='green', linestyle=':', marker=None,
-                           markersize=10, label='perfect data')
+# ideal_line = mlines.Line2D([], [], color='green', linestyle='--', marker=None, markersize=10, label='perfect data')
+
+zero_intervention_line = mlines.Line2D([], [], color='black', linestyle='-', marker=None,
+                           markersize=10, label='zero intervention')
+
+perfect_context_line = mlines.Line2D([], [], color='black', linestyle='--', marker=None,
+                           markersize=10, label='perfect context')
+
 # perfect_line = mlines.Line2D([], [], color='black', linestyle='-', marker=None, markersize=10, label='perfect context')
 
 # Add these dummy handles to our list
-all_legend_handles = legend_handles + [ideal_line] # + [ideal_line, perfect_line] if needed
+all_legend_handles = legend_handles + [perfect_context_line, zero_intervention_line]
 
 # Create the legend below the subplots
 # Adjust bbox_to_anchor y-value (e.g., -0.2, -0.3) to position it correctly below the titles
@@ -179,5 +213,5 @@ fig.legend(handles=all_legend_handles,
 # Using subplots_adjust might be better than tight_layout when placing a fig.legend manually.
 fig.subplots_adjust(bottom=0.3)  # Increase bottom margin to make space for titles and legend
 
-plt.savefig("ideal-vs-zeroIntervention.eps", dpi=300, bbox_inches='tight', format='eps')
-# plt.show()
+plt.savefig(f"perfectContext-vs-zeroIntervention-affected-train_{TRAIN_SIZE_MIN}-{TRAIN_SIZE_MAX}.eps", dpi=300, bbox_inches='tight', format='eps')
+plt.show()
