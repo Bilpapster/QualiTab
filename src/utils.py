@@ -62,6 +62,13 @@ def get_datasets_to_skip_from_env_or_else_empty() -> set[int]:
     return set(parse_comma_separated_integers(datasets_to_skip_str))
 
 
+def flatten_extend(matrix):
+    flat_list = []
+    for row in matrix:
+        flat_list.extend(row)
+    return flat_list
+
+
 def connect_to_db() -> tuple:
     """
     Connects to the PostgreSQL database and returns a tuple
@@ -151,3 +158,61 @@ def print_openML_report_wrt_tabpfn_limits():
         if benchmark_config['task'] == 'classification':
             print(f"\tToo many targets: {nof_datasets_with_too_many_targets:9} ({nof_datasets_with_too_many_targets / nof_tasks:.2%})")
         print()
+
+def fetch_baseline_metric_value(conn, evaluation_type: str = None, metric_name: str = None, tag: str = 'CLEAN_CLEAN'):
+    cursor = conn.cursor()
+    query = f"""
+    SELECT AVG(metric_value) AS baseline_metric_value
+    FROM embeddings_experiments ex JOIN embedding_evaluation_metrics ev
+    ON ex.experiment_id = ev.experiment_id
+    WHERE ex.tag = '{tag}'
+    """
+    if evaluation_type:
+        query += f" AND ev.evaluation_type = '{evaluation_type}'"
+    if metric_name:
+        query += f" AND ev.metric_name = '{metric_name}'"
+
+    cursor.execute(query)
+    return cursor.fetchall()[0][0]
+
+
+def fetch_corrupted_metric_values(conn, evaluation_type: str = None, metric_name: str = None, tag: str = 'DIRTY_DIRTY'):
+    import pandas as pd
+
+    cursor = conn.cursor()
+    query = f"""
+    SELECT CONCAT(ex.error_type, '_', ex.row_corruption_percent) as type_rate, AVG(metric_value) AS avg_metric_value_error
+    FROM embeddings_experiments ex JOIN embedding_evaluation_metrics ev
+    ON ex.experiment_id = ev.experiment_id
+    WHERE ex.tag = '{tag}'
+    """
+    if evaluation_type:
+        query += f" AND ev.evaluation_type = '{evaluation_type}'"
+    if metric_name:
+        query += f" AND ev.metric_name = '{metric_name}'"
+    query += " GROUP BY type_rate"
+    cursor.execute(query)
+    columns = [desc[0] for desc in cursor.description]
+    df = pd.DataFrame(cursor.fetchall(), columns=columns)
+    cursor.close()
+    # Split the type_rate into error_type and corruption_rate
+    df['error_type'] = df['type_rate'].str.split('_').str[0]
+    df['corruption_rate'] = df['type_rate'].str.split('_').str[1].astype(int)
+
+    # Convert avg_metric_value_error to float
+    df['avg_metric_value_error'] = df['avg_metric_value_error'].astype(float)
+
+    # Drop the original type_rate column and rename avg_metric_value_error to metric_value
+    df = df.drop(columns=['type_rate'])
+    df = df.rename(columns={'avg_metric_value_error': 'metric_value'})
+
+    # Sort the DataFrame by error_type and (secondly) corruption_rate within each error_type
+    result = {}
+    for error_type, group in df.groupby('error_type'):
+        # Sort again to ensure order is maintained
+        group = group.sort_values('corruption_rate')
+        result[error_type] = {
+            'rates': group['corruption_rate'].tolist(),
+            'values': group['metric_value'].tolist()
+        }
+    return result
