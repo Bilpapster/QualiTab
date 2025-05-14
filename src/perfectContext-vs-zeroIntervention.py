@@ -26,9 +26,9 @@ markers = {
 linestyles = ['-', '--']  # Different line styles for each error scenario ['zero intervention', 'perfect context']
 
 line_labels = {  # Labels for the data lines in the legend
-    error_types[0]: 'missing values',
+    error_types[0]: 'missing \nvalues',
     error_types[1]: 'scaling',
-    error_types[2]: 'categorical shift'
+    error_types[2]: 'categorical \nshift'
 }
 
 evaluation_methods_for_ax_titles = [
@@ -200,15 +200,16 @@ for i, ax in enumerate(axs):
 # ideal_line = mlines.Line2D([], [], color='green', linestyle='--', marker=None, markersize=10, label='perfect data')
 
 zero_intervention_line = mlines.Line2D([], [], color='black', linestyle='-', marker=None,
-                           markersize=10, label='zero intervention')
+                           markersize=10, label='zero \nintervention')
 
 perfect_context_line = mlines.Line2D([], [], color='black', linestyle='--', marker=None,
-                           markersize=10, label='perfect context')
+                           markersize=10, label='perfect \ncontext')
 
-# perfect_line = mlines.Line2D([], [], color='black', linestyle='-', marker=None, markersize=10, label='perfect context')
+perfect_line = mlines.Line2D([], [], color='green', linestyle=':', marker=None,
+                             markersize=10, label='perfect data \n(baseline)')
 
 # Add these dummy handles to our list
-all_legend_handles = legend_handles + [perfect_context_line, zero_intervention_line]
+all_legend_handles = legend_handles + [perfect_context_line, zero_intervention_line, perfect_line]
 
 # Create the legend below the subplots
 # Adjust bbox_to_anchor y-value (e.g., -0.2, -0.3) to position it correctly below the titles
@@ -216,7 +217,7 @@ all_legend_handles = legend_handles + [perfect_context_line, zero_intervention_l
 fig.legend(handles=all_legend_handles,
            fontsize="16",
            loc='lower center',  # Position center align at the bottom
-           bbox_to_anchor=(0.5, -0.25),  # Adjust Y value (-0.25) to control distance below plots
+           bbox_to_anchor=(0.5, -0.35),  # Adjust Y value (-0.25) to control distance below plots
            ncol=len(all_legend_handles),  # Number of columns = number of items
            frameon=True)  # Remove legend frame
 
@@ -226,4 +227,4 @@ fig.legend(handles=all_legend_handles,
 fig.subplots_adjust(bottom=0.3)  # Increase bottom margin to make space for titles and legend
 
 plt.savefig(f"perfectContext-vs-zeroIntervention-affected-train_{TRAIN_SIZE_MIN}-{TRAIN_SIZE_MAX}.eps", dpi=300, bbox_inches='tight', format='eps')
-plt.show()
+# plt.show()
