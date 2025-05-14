@@ -55,10 +55,10 @@ y_labels = [
 ]
 
 evaluation_types_names_for_queries = [
-    ('knn similarity', 'Avg Cosine Similarity (k=1) (all)'),
-    ('knn similarity', 'Avg Cosine Similarity (k=3) (all)'),
-    ('knn similarity', 'Avg Cosine Similarity (k=5) (all)'),
-    ('knn similarity', 'Avg Cosine Similarity (k=10) (all)'),
+    ('knn similarity', 'Avg Cosine Similarity (k=1) (unaffected)'),
+    ('knn similarity', 'Avg Cosine Similarity (k=3) (unaffected)'),
+    ('knn similarity', 'Avg Cosine Similarity (k=5) (unaffected)'),
+    ('knn similarity', 'Avg Cosine Similarity (k=10) (unaffected)'),
     ('linear probing fit to all', 'ROC AUC'),
     ('clustering all test', 'Purity'),
 ]
@@ -85,7 +85,7 @@ y_values = [
 
 # y-values for the horizontal green dashed line in each plot
 horizontal_line_yvals = [
-    fetch_baseline_metric_value(conn, evaluation_type=evaluation_type, metric_name=metric_name)
+    fetch_baseline_metric_value(conn, evaluation_type=evaluation_type, metric_name=metric_name, tag='CLEAN_DIRTY')
     for evaluation_type, metric_name in evaluation_types_names_for_queries
 ]
 
@@ -168,7 +168,7 @@ for i, ax in enumerate(axs):
 # --- Shared Legend ---
 # Create dummy lines for the legend items that are not plotted data
 ideal_line = mlines.Line2D([], [], color='green', linestyle=':', marker=None,
-                           markersize=10, label='perfect data')
+                           markersize=10, label='perfect data (baseline)')
 # perfect_line = mlines.Line2D([], [], color='black', linestyle='-', marker=None, markersize=10, label='perfect context')
 
 # Add these dummy handles to our list
