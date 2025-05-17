@@ -273,3 +273,13 @@ def get_idx_positions_from_idx_values(idx_values: list[int], data: pd.DataFrame)
             raise ValueError(f"Value {value} not found in DataFrame index.")
 
     return [data.index.get_loc(value) for value in idx_values]
+
+
+def fetch_all_as_list_of_dicts(cursor):
+    """
+    Fetch all rows from the cursor and return them as a list of dictionaries.
+    Each dictionary represents a row, with column names as keys.
+    """
+    columns = [desc.name for desc in cursor.description]
+    rows = cursor.fetchall()
+    return [dict(zip(columns, row)) for row in rows]
