@@ -76,6 +76,24 @@ def euclidean_distances_from_reference(reference_embeddings, target_embeddings, 
     ])
 
 
+def cosine_similarity_from_reference(reference_embeddings, target_embeddings):
+    """
+    Calculates the cosine similarity from each target embedding to a reference embedding.
+    For instance, calculates the similarity between the first target embedding and the first reference embedding,
+    the second target embedding and the second reference embedding, etc. The result is a 1D array of similarities.
+
+    Args:
+        reference_embeddings (np.ndarray): Reference embeddings of shape (n_samples, n_features).
+        target_embeddings (np.ndarray): Target embeddings of shape (n_samples, n_features).
+    """
+    from scipy.spatial.distance import cosine
+
+    return [
+        cosine(reference_embedding, target_embedding)
+        for reference_embedding, target_embedding in zip(reference_embeddings, target_embeddings)
+    ]
+
+
 def roc_auc(y_true, y_predict_proba):
     """Calculates the ROC AUC score. Automatically handles binary and multiclass cases (ovr)."""
     from sklearn.metrics import roc_auc_score
