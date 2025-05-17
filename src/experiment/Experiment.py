@@ -181,6 +181,7 @@ class Experiment(ABC):
         randomly sample a subset of the max allowed number of classes from the original classes."""
         self.log(f"The number of classes ({len(classes)}) exceed the maximum allowed ({TABPFN_MAX_CLASSES}). ")
         self.log(f"Sampling {TABPFN_MAX_CLASSES} classes (keeping all their samples) using seed {self.random_seed}.")
+        random.seed(self.random_seed) # important for reproducibility of results
         classes_to_preserve = random.sample(sorted(classes), TABPFN_MAX_CLASSES)
         self.log(f"Selected classes: {classes_to_preserve}")
         data = self._get_total_data()
