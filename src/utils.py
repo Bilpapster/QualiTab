@@ -1,6 +1,7 @@
 import logging
 from dotenv import load_dotenv
 import openml
+import pandas as pd
 
 from config import (
     TABPFN_MAX_SAMPLES,
@@ -255,3 +256,20 @@ def append_parameters_to_query(
     if metric_name:
         query_suffix += f" AND ev.metric_name = '{metric_name}'"
     return query_suffix
+
+
+def get_idx_positions_from_idx_values(idx_values: list[int], data: pd.DataFrame):
+    """
+    Get the index positions of the given index values in the DataFrame index.
+    Args:
+        idx_values (list[int]): The index values to find positions for.
+        data (pd.DataFrame): The DataFrame to search in.
+    Returns:
+        list[int]: The index positions of the given index values.
+    """
+
+    for value in idx_values:
+        if value not in data.index:
+            raise ValueError(f"Value {value} not found in DataFrame index.")
+
+    return [data.index.get_loc(value) for value in idx_values]
