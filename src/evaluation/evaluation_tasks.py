@@ -1,16 +1,17 @@
-def linear_probing(embeddings, labels):
+def linear_probing(embeddings, labels, random_state=42):
     """
     Performs linear probing on the embeddings. Returns the predicted probabilities for each class.
     """
     from sklearn.linear_model import LogisticRegression
 
     # Train a logistic regression classifier
-    clf = LogisticRegression(max_iter=1000)
+    clf = LogisticRegression(max_iter=1000, solver='liblinear', random_state=random_state)
     clf.fit(embeddings, labels)
 
     # Make predictions on the test set and return the predictions
     y_pred_proba = clf.predict_proba(embeddings)
     return y_pred_proba
+
 
 def k_means_clustering(embeddings, n_clusters, random_state=42):
     """
