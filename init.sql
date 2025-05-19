@@ -61,7 +61,8 @@ BEGIN
             evaluation_type VARCHAR(255) NOT NULL, -- e.g., 'linear probing', 'clustering'
             metric_name VARCHAR(255) NOT NULL,     -- e.g., 'ROC AUC', 'Purity', 'Avg Cosine Similarity (k=5)'
             metric_value DOUBLE PRECISION NOT NULL,
-            weights JSONB,                         -- Optional: to store classifier weights or cluster centroids
+            row_corruption_percent SMALLINT,         -- Optional: for row corruption percentage, especially for CLEAN_CLEAN scenarios
+            -- weights JSONB,                         -- Optional: to store classifier weights or cluster centroids
             other_info JSONB,                      -- Optional: for any other relevant information
             evaluated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
