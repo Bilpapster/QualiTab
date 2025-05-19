@@ -97,5 +97,5 @@ def cosine_similarity_from_reference(reference_embeddings, target_embeddings):
 def roc_auc(y_true, y_predict_proba):
     """Calculates the ROC AUC score. Automatically handles binary and multiclass cases (ovr)."""
     from sklearn.metrics import roc_auc_score
-    return roc_auc_score(y_true, y_predict_proba, multi_class='ovr') if len(y_true) > 2 \
+    return roc_auc_score(y_true, y_predict_proba, multi_class='ovr') if len(set(y_true)) > 2 \
         else roc_auc_score(y_true, y_predict_proba[:, 1])
