@@ -149,3 +149,16 @@ class OpenMLExperiment(Experiment):
     def run_one_experiment(self, benchmark_config=None):
         # random seed, data split to X/y train/test and model can be found in instance attributes
         pass
+
+    @staticmethod
+    def get_task_id_from_dataset_name(dataset_name: str) -> int:
+        """
+        Function to get the task id from the dataset name. Internally finds the dataset id and maps it to the task id.
+        For example, if the dataset name is 'OpenML-123', the dataset id will be 123 and then the task id will be found.
+        This function is introduced to overcome the OpenML flaw where the task id is not always equal to the dataset id.
+        """
+        from utils import get_openML_task_mapping
+
+        mapping = get_openML_task_mapping()
+        dataset_id =  int(dataset_name.split("-")[-1])
+        return mapping.get(dataset_id, dataset_id)
