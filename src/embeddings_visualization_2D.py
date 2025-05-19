@@ -14,8 +14,9 @@ from utils import (
     flatten_extend,
     fetch_baseline_metric_value,
     fetch_corrupted_metric_values,
-    get_openML_task_mapping,
-    fetch_all_as_list_of_dicts
+    fetch_all_as_list_of_dicts,
+    keep_corrupted_rows_only_for_test_set,
+    get_idx_positions_from_idx_values,
 )
 
 
@@ -72,7 +73,13 @@ experiments = [
     '80b0c9a8-4886-4ad8-a25d-83c64a42cb61',
 ]
 
-ALPHA = 0.5 # transparency for the points of the embeddings
+ALPHA = 0.8 # transparency for the points of the embeddings
+size = 80
+# Fill and edge colors:
+TRANSPARENT_FILL = "#FFFFFF00" # white color with alpha=0 (00 in hex)
+RED_ALPHA_0_5 = "#FF000080" # red color with alpha=0.5 (80 in hex)
+DARK_GRAY = "#121212" # dark gray color for unaffected rows
+
 
 # 10 different colors from the seaborn color palette. We exclude red to avoid confusion with the corrupted rows
 colors = ['#4878D0', '#EE854A', '#6ACC64', '#9d6acc', '#956CB4', '#8C613C', '#DC7EC0', '#797979', '#D5BB67', '#82C6E2']
@@ -80,12 +87,15 @@ colors = [color.lstrip('#') for color in colors] # remove the '#' from the hex c
 colors = [tuple(int(color[i:i+2], 16)/255 for i in (0, 2, 4)) for color in colors] # transform to RGB
 colors = [tuple(list(color) + [ALPHA]) for color in colors] # add alpha channel
 
+fillcolor = "#FFFFFF00" # white color with alpha=0.5 (80 in hex)
+
 # in case you prefer standard colors, you can fall back to this:
 # colors = ['blue', 'orange', 'green', 'purple', 'brown', 'pink', 'turquoise', 'gray', 'yellow', 'aquamarine']
 
 shapes = ['o', 'X', '^', 'D', 'v', 's', '*', 'P', 'H', '>']
 
 for experiment in experiments:
+    print(f"Working in experiment id {experiment}")
     query = f"""
     SELECT test_embeddings, corrupted_rows, random_seed, dataset_name, tag, error_type, row_corruption_percent
     FROM embeddings_experiments
@@ -95,25 +105,24 @@ for experiment in experiments:
     conn, cursor = connect_to_db()
     cursor.execute(query)
 
-
-    rows = cursor.fetchall()
+    result = fetch_all_as_list_of_dicts(cursor)[0]
     cursor.close()
 
-    embeddings = np.array(rows[0][0])
-    corrupted_rows = np.array(rows[0][1]) if not isinstance(rows[0][1][0], list) else np.array(rows[0][1][1])
-    random_seed = rows[0][2]
-    dataset_name = str(rows[0][3])
+    embeddings = np.array(result['test_embeddings'])
+    corrupted_rows = keep_corrupted_rows_only_for_test_set(result['corrupted_rows'])
+    random_seed = result['random_seed']
+    dataset_name = result['dataset_name']
     dataset_id = int(dataset_name.split('-')[1])
-    tag = rows[0][4]
-    error_type = rows[0][5]
-    row_corruption_percent = rows[0][6]
+    tag = result['tag']
+    error_type = result['error_type']
+    row_corruption_percent = result['row_corruption_percent']
 
-    task_to_dataset_id_mapping = get_openML_task_mapping()
     experiment_object = OpenMLExperiment()
     experiment_object.random_seed = random_seed
-    experiment_object.task = openml.tasks.get_task(task_to_dataset_id_mapping[dataset_id])
+    experiment_object.task = openml.tasks.get_task(OpenMLExperiment.get_task_id_from_dataset_name(dataset_name))
+    experiment_object.dataset_id = dataset_id
     experiment_object.load_dataset(dataset_config=dict())
-    corrupted_rows = [experiment_object.X_test.index.get_loc(row) for row in corrupted_rows]
+    corrupted_rows = get_idx_positions_from_idx_values(corrupted_rows, experiment_object.X_test)
     unaffected_rows = [i for i in range(len(embeddings)) if i not in corrupted_rows]
 
     conn, cursor = connect_to_db()
@@ -154,34 +163,45 @@ for experiment in experiments:
     label_mapping = {label: i for i, label in enumerate(unique_labels)}
 
 
-    colors_left = [colors[label_mapping[label]] for label in experiment_object.y_test]
-    colors_right = ['red' if i in corrupted_rows else 'black' for i in range(len(embeddings))]
+    edge_colors_left = [colors[label_mapping[label]] for label in experiment_object.y_test]
+    edge_colors_right = ['red' if i in corrupted_rows else DARK_GRAY for i in range(len(embeddings))]
+    fill_colors_right = [RED_ALPHA_0_5 if i in corrupted_rows else TRANSPARENT_FILL for i in range(len(embeddings))]
 
     fig, axs = plt.subplots(1, 4, figsize=(20, 4), sharey=False)
 
-    fig.suptitle(f"{experiment} - {str(rows[0][3])} - seed {random_seed} - tag {tag} - {error_type} - {row_corruption_percent}%")
+    fig.suptitle(f"{experiment} - {str(experiment)} - seed {random_seed} - tag {tag} - {error_type} - {row_corruption_percent}%")
 
-    size = 50
+
     for i, label in enumerate(unique_labels):
-        axs[0].scatter(raw_clean_2d[experiment_object.y_test == label, 0], raw_clean_2d[experiment_object.y_test == label, 1], color=colors[i], s=size, marker=shapes[i])
-        axs[1].scatter(clean_embeddings2d[experiment_object.y_test == label, 0], clean_embeddings2d[experiment_object.y_test == label, 1], color=colors[i], s=size, marker=shapes[i])
-        axs[2].scatter(embeddings2d[experiment_object.y_test == label, 0], embeddings2d[experiment_object.y_test == label, 1], color=colors[i], s=size, marker=shapes[i])
-        axs[3].scatter(embeddings2d[experiment_object.y_test == label, 0], embeddings2d[experiment_object.y_test == label, 1], c= [clr for clr,to_add in zip(colors_right,experiment_object.y_test == label) if to_add], s=size, marker=shapes[i], alpha=0.5)
+        axs[0].scatter(
+            raw_clean_2d[experiment_object.y_test == label, 0], raw_clean_2d[experiment_object.y_test == label, 1],
+            edgecolors=colors[i], color=fillcolor, s=size, marker=shapes[i]
+        )
+        axs[1].scatter(
+            clean_embeddings2d[experiment_object.y_test == label, 0], clean_embeddings2d[experiment_object.y_test == label, 1],
+            edgecolors=colors[i], color=fillcolor, s=size, marker=shapes[i]
+        )
+        axs[2].scatter(
+            embeddings2d[experiment_object.y_test == label, 0], embeddings2d[experiment_object.y_test == label, 1],
+            edgecolors=colors[i], color=fillcolor, s=size, marker=shapes[i]
+        )
+        axs[3].scatter(
+            embeddings2d[experiment_object.y_test == label, 0], embeddings2d[experiment_object.y_test == label, 1],
+            edgecolors=[clr for clr,to_add in zip(edge_colors_right, experiment_object.y_test == label) if to_add],
+            c=[clr for clr,to_add in zip(fill_colors_right, experiment_object.y_test == label) if to_add],
+            s=size, marker=shapes[i]
+        )
 
     axs[0].set_title("Raw data")
     axs[1].set_title("Clean Embeddings")
     axs[2].set_title("Imperfect Embeddings")
     axs[3].set_title("Corrupted data")
 
-    # axs[0].scatter(raw_clean_2d[:, 0], raw_clean_2d[:, 1], c= colors_left, s=10, alpha=0.5)
-    # axs[1].scatter(clean_embeddings2d[:, 0], clean_embeddings2d[:, 1], c= colors_left, s=10, alpha=0.5)
-    # axs[2].scatter(embeddings2d[:, 0], embeddings2d[:, 1], c= colors_left, s=10, alpha=0.5)
-    # axs[3].scatter(embeddings2d[:, 0], embeddings2d[:, 1], c= colors_right, s=10, alpha=0.5)
 
-
-    plt.savefig(f"figures/{str(rows[0][3])} - seed {random_seed} - tag {tag} - {error_type} - {row_corruption_percent}%.png",
+    plt.savefig(f"figures/{str(experiment)} - seed {random_seed} - tag {tag} - {error_type} - {row_corruption_percent}%.png",
                 dpi=300, bbox_inches='tight', format='png')
     # plt.show()
+    plt.close()
 # plt.set_title("Embedded data + PCA")
 # plt.set_xlabel("PCA 1")
 # plt.set_ylabel("PCA 2")
