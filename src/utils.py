@@ -70,6 +70,26 @@ def flatten_extend(matrix):
     return flat_list
 
 
+def keep_corrupted_rows_only_for_test_set(corrupted_rows: list) -> list:
+    """
+    Keep only the corrupted rows for the test set.
+    If the first element of the list is a list, it is assumed to be the train set and it is dropped.
+    Args:
+        corrupted_rows (list): A list of lists containing the corrupted rows.
+    Returns:
+        list: A list of corrupted rows for the test set.
+    """
+    if not isinstance(corrupted_rows, list):
+        raise TypeError("Expected a list of corrupted rows. Got: {}".format(type(corrupted_rows)))
+
+    # Check if the first element is a list
+    if len(corrupted_rows) > 0 and isinstance(corrupted_rows[0], list):
+        # if it is a list of lists, keep the second element (the first is the train set)
+        corrupted_rows = corrupted_rows[1]
+
+    return corrupted_rows
+
+
 def connect_to_db() -> tuple:
     """
     Connects to the PostgreSQL database and returns a tuple
@@ -183,6 +203,54 @@ def fetch_baseline_metric_value(
 
     cursor.execute(query)
     return cursor.fetchall()[0][0]
+
+
+def fetch_corrupted_rows_for_clean_clean_experiment(
+    dataset_name:str, random_seed:int,
+    row_corruption_percent, column_corruption_percent
+):
+    conn, cursor = connect_to_db()
+    query = f"""
+    SELECT corrupted_rows
+    FROM embeddings_experiments
+    WHERE dataset_name = '{dataset_name}'
+    AND random_seed = {random_seed}
+    AND row_corruption_percent = {row_corruption_percent}
+    -- AND column_corruption_percent = {column_corruption_percent}
+    AND tag = 'CLEAN_DIRTY'
+    LIMIT 1
+    """
+    cursor.execute(query)
+    result = cursor.fetchall()
+    cursor.close()
+    if len(result) == 0:
+        print(f"No corrupted rows found for dataset {dataset_name} with random seed {random_seed}."
+              f"{row_corruption_percent=} {column_corruption_percent=} {query=}")
+        return []
+    
+    return result[0][0]
+
+
+def fetch_clean_clean_embeddings(
+    dataset_name: str, random_seed: int
+):
+    conn, cursor = connect_to_db()
+    query = f"""
+    SELECT test_embeddings
+    FROM embeddings_experiments
+    WHERE dataset_name = '{dataset_name}'
+    AND random_seed = {random_seed}
+    AND error_type = 'NONE'
+    AND row_corruption_percent = 0
+    AND column_corruption_percent = 0
+    AND tag = 'CLEAN_CLEAN'
+    """
+    cursor.execute(query)
+    result = cursor.fetchall()
+    cursor.close()
+    if len(result) == 0:
+        raise ValueError(f"No clean-clean embeddings found for dataset {dataset_name} with random seed {random_seed}.")
+    return result[0][0]
 
 
 def fetch_corrupted_metric_values(
