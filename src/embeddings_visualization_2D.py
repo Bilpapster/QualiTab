@@ -19,62 +19,11 @@ from utils import (
     get_idx_positions_from_idx_values,
 )
 
-
-"""
--- query to get the experiment ids fro the best and worst roc auc
-SELECT ex.experiment_id
---, metric_value, metric_name, evaluation_type, tag, ev.row_corruption_percent, error_type
-FROM embedding_evaluation_metrics ev JOIN embeddings_experiments ex
-ON ex.experiment_id = ev.experiment_id
-WHERE metric_value > 0
-AND evaluation_type LIKE '%LP%ALL%TLGT%'
--- AND ex.tag != 'CLEAN_CLEAN'
--- AND ex.row_corruption_percent > 0
-ORDER BY metric_value  -- DESC
-LIMIT 10
--- OFFSET 5000
-"""
-
-experiments = [
-    # worst roc auc
-    '0b4b36f6-8714-4360-adc2-235753b95e16',
-    'e249f5af-fe1c-40df-b2d9-c9b56732b825',
-    '1bfcb4e5-9ba2-438e-af0a-2d021564045d',
-    'a7b76a4a-81f3-411b-836e-2085c304db05',
-    'cc8ba962-0bb6-4e94-a730-e7d11b9b4de5',
-    '11c5de3b-a823-4d8f-a57a-00f72c7fd316',
-    '5f2ce6f0-e9d5-4b9c-b0d9-4d5f8694ae18',
-    '95d67378-b435-42c8-959a-d93902631b72',
-    '7a1103c0-b8f5-432f-9c77-a4de851299ec',
-    '7160d5bc-3900-4c9b-afb1-fc088cdbc700',
-
-    # best roc auc
-    '81dcef79-6802-4b13-9bb8-afe4030e116a',
-    '86156091-8493-47a6-ab37-ce6a60c361de',
-    '12b8d001-1904-4453-ad81-42ef01714025',
-    '6beba83a-fcc1-43cb-9dc8-a2d669c6f434',
-    '4b998d8c-6985-46fc-b895-3356e10639d9',
-    '615de3a9-fdd0-49bf-a6af-ef890508ecdb',
-    '0a9e55a7-8c79-481f-9b63-ad82613630b3',
-    '3d024ebf-99cd-49b1-a1f4-a1583e19becc',
-    '73e911b5-98b0-4e80-823b-d22bac25afd2',
-    '6af3ade1-cb95-4d5e-8fe2-006ca8c9d09e',
-
-    # best roc auc with offset 5000
-    'aeed668c-a286-4dc4-86ed-313387973b43',
-    '8064a086-07db-4cc8-87fc-47dbd6a4d3a5',
-    'ae39fb3a-3064-4f75-bab3-6d09d72b753f',
-    'e27dd2d0-f3de-4d18-b5c8-9f8295f67354',
-    '59f61a7c-fb75-49ed-9541-a502e8f9d781',
-    'd4ad08a6-ca92-4353-b605-0d77f376a598',
-    '008a363e-61a7-4321-b9d1-9804d9ebd622',
-    'a75a1161-33e7-438a-ae39-da4feab40a43',
-    '166ba2b5-4e7f-4303-a655-1ab22be35b97',
-    '80b0c9a8-4886-4ad8-a25d-83c64a42cb61',
-]
+from experiments_to_visualize import experiments
 
 ALPHA = 0.8 # transparency for the points of the embeddings
-size = 80
+MARKER_SIZE = 80
+FIG_SIZE = (20, 3)
 # Fill and edge colors:
 TRANSPARENT_FILL = "#FFFFFF00" # white color with alpha=0 (00 in hex)
 RED_ALPHA_0_5 = "#FF000080" # red color with alpha=0.5 (80 in hex)
@@ -95,7 +44,6 @@ fillcolor = "#FFFFFF00" # white color with alpha=0.5 (80 in hex)
 shapes = ['o', 'X', '^', 'D', 'v', 's', '*', 'P', 'H', '>']
 
 for experiment in experiments:
-    print(f"Working in experiment id {experiment}")
     query = f"""
     SELECT test_embeddings, corrupted_rows, random_seed, dataset_name, tag, error_type, row_corruption_percent
     FROM embeddings_experiments
@@ -106,7 +54,6 @@ for experiment in experiments:
     cursor.execute(query)
 
     result = fetch_all_as_list_of_dicts(cursor)[0]
-    cursor.close()
 
     embeddings = np.array(result['test_embeddings'])
     corrupted_rows = keep_corrupted_rows_only_for_test_set(result['corrupted_rows'])
@@ -125,7 +72,26 @@ for experiment in experiments:
     corrupted_rows = get_idx_positions_from_idx_values(corrupted_rows, experiment_object.X_test)
     unaffected_rows = [i for i in range(len(embeddings)) if i not in corrupted_rows]
 
-    conn, cursor = connect_to_db()
+    # get the corrupted embeddings for 10%, 20% and 40% corruption
+    corrupted_embeddings = dict()
+    for corruption_percent in [10, 20, 40]:
+        if corruption_percent == row_corruption_percent:
+            corrupted_embeddings[corruption_percent] = embeddings
+            continue
+
+        get_corrupted_embeddings_query = f"""
+            SELECT test_embeddings
+            FROM embeddings_experiments
+            WHERE dataset_name = '{dataset_name}'
+            AND tag = '{tag}'
+            AND error_type = '{error_type}'
+            AND random_seed = {random_seed}
+            AND row_corruption_percent = {corruption_percent}
+        """
+        cursor.execute(get_corrupted_embeddings_query)
+        corrupted_embeddings[corruption_percent] = np.array(fetch_all_as_list_of_dicts(cursor)[0]['test_embeddings'])
+
+    # get the clean embeddings
     get_clean_clean_query = f"""
         SELECT test_embeddings
         FROM embeddings_experiments
@@ -135,8 +101,8 @@ for experiment in experiments:
         AND random_seed = {random_seed}
     """
     cursor.execute(get_clean_clean_query)
-    clean_embeddings = cursor.fetchall()[0][0]
-
+    clean_embeddings = np.array(fetch_all_as_list_of_dicts(cursor)[0]['test_embeddings'])
+    cursor.close()
 
     # Instantiate tsne, specify cosine metric
     lower_dim = TSNE(random_state=random_seed, max_iter=10000, metric="cosine")
@@ -158,6 +124,16 @@ for experiment in experiments:
         lower_dim.fit_transform(scaler.fit_transform(clean_embeddings)),
     )
 
+    corrupted_embeddings_10 = scaler.fit_transform(
+        lower_dim.fit_transform(scaler.fit_transform(corrupted_embeddings[10])),
+    )
+    corrupted_embeddings_20 = scaler.fit_transform(
+        lower_dim.fit_transform(scaler.fit_transform(corrupted_embeddings[20])),
+    )
+    corrupted_embeddings_40 = scaler.fit_transform(
+        lower_dim.fit_transform(scaler.fit_transform(corrupted_embeddings[40])),
+    )
+
     unique_labels = np.unique(experiment_object.y_test)
     # map each label to an integer for visualization purposes
     label_mapping = {label: i for i, label in enumerate(unique_labels)}
@@ -167,39 +143,54 @@ for experiment in experiments:
     edge_colors_right = ['red' if i in corrupted_rows else DARK_GRAY for i in range(len(embeddings))]
     fill_colors_right = [RED_ALPHA_0_5 if i in corrupted_rows else TRANSPARENT_FILL for i in range(len(embeddings))]
 
-    fig, axs = plt.subplots(1, 4, figsize=(20, 4), sharey=False)
-
-    fig.suptitle(f"{experiment} - {str(experiment)} - seed {random_seed} - tag {tag} - {error_type} - {row_corruption_percent}%")
-
+    fig, axs = plt.subplots(1, 6, figsize=FIG_SIZE, sharey=False)
 
     for i, label in enumerate(unique_labels):
         axs[0].scatter(
             raw_clean_2d[experiment_object.y_test == label, 0], raw_clean_2d[experiment_object.y_test == label, 1],
-            edgecolors=colors[i], color=fillcolor, s=size, marker=shapes[i]
+            edgecolors=colors[i], color=fillcolor, s=MARKER_SIZE, marker=shapes[i]
         )
         axs[1].scatter(
             clean_embeddings2d[experiment_object.y_test == label, 0], clean_embeddings2d[experiment_object.y_test == label, 1],
-            edgecolors=colors[i], color=fillcolor, s=size, marker=shapes[i]
+            edgecolors=colors[i], color=fillcolor, s=MARKER_SIZE, marker=shapes[i]
         )
         axs[2].scatter(
-            embeddings2d[experiment_object.y_test == label, 0], embeddings2d[experiment_object.y_test == label, 1],
-            edgecolors=colors[i], color=fillcolor, s=size, marker=shapes[i]
+            corrupted_embeddings_10[experiment_object.y_test == label, 0], corrupted_embeddings_10[experiment_object.y_test == label, 1],
+            edgecolors=colors[i], color=fillcolor, s=MARKER_SIZE, marker=shapes[i]
         )
         axs[3].scatter(
-            embeddings2d[experiment_object.y_test == label, 0], embeddings2d[experiment_object.y_test == label, 1],
+            corrupted_embeddings_20[experiment_object.y_test == label, 0], corrupted_embeddings_20[experiment_object.y_test == label, 1],
+            edgecolors=colors[i], color=fillcolor, s=MARKER_SIZE, marker=shapes[i]
+        )
+        axs[4].scatter(
+            corrupted_embeddings_40[experiment_object.y_test == label, 0], corrupted_embeddings_40[experiment_object.y_test == label, 1],
+            edgecolors=colors[i], color=fillcolor, s=MARKER_SIZE, marker=shapes[i]
+        )
+        axs[5].scatter(
+            corrupted_embeddings_40[experiment_object.y_test == label, 0], corrupted_embeddings_40[experiment_object.y_test == label, 1],
             edgecolors=[clr for clr,to_add in zip(edge_colors_right, experiment_object.y_test == label) if to_add],
             c=[clr for clr,to_add in zip(fill_colors_right, experiment_object.y_test == label) if to_add],
-            s=size, marker=shapes[i]
+            s=MARKER_SIZE, marker=shapes[i]
         )
 
-    axs[0].set_title("Raw data")
-    axs[1].set_title("Clean Embeddings")
-    axs[2].set_title("Imperfect Embeddings")
-    axs[3].set_title("Corrupted data")
+    for ax in axs:
+        ax.set_xticks([])
+        ax.set_yticks([])
+        # ax.spines['top'].set_visible(False)
+        # ax.spines['right'].set_visible(False)
+        # ax.spines['left'].set_visible(True)  # Keep left spine
+        # ax.spines['bottom'].set_visible(True)  # Keep bottom spine
+
+    axs[0].set_title("Clean data")
+    axs[1].set_title("Clean embeddings")
+    axs[2].set_title("10% corruption")
+    axs[3].set_title("20% corruption")
+    axs[4].set_title("40% corruption")
+    axs[5].set_title("40% corruption (corrupted in red)")
 
 
-    plt.savefig(f"figures/{str(experiment)} - seed {random_seed} - tag {tag} - {error_type} - {row_corruption_percent}%.png",
-                dpi=300, bbox_inches='tight', format='png')
+    plt.savefig(f"figures/{error_type} - {random_seed} - {dataset_name}%.png",
+                dpi=100, bbox_inches='tight', format='png')
     # plt.show()
     plt.close()
 # plt.set_title("Embedded data + PCA")
