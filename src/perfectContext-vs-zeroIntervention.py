@@ -275,5 +275,5 @@ fig.legend(handles=all_legend_handles,
 # Using subplots_adjust might be better than tight_layout when placing a fig.legend manually.
 fig.subplots_adjust(bottom=0.3)  # Increase bottom margin to make space for titles and legend
 
-plt.savefig(f"perfectContext-vs-zeroIntervention-affected-train_{TRAIN_SIZE_MIN}-{TRAIN_SIZE_MAX}.eps", dpi=300, bbox_inches='tight', format='eps')
+plt.savefig(f"perfectContext-vs-zeroIntervention-affected-train_{TRAIN_SIZE_MIN}-{TRAIN_SIZE_MAX}.eps", dpi=500, bbox_inches='tight', format='eps')
 # plt.show()
