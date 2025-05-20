@@ -266,6 +266,7 @@ def fetch_corrupted_metric_values(
     FROM embeddings_experiments ex JOIN embedding_evaluation_metrics ev
     ON ex.experiment_id = ev.experiment_id
     WHERE ex.tag = '{tag}'
+    AND metric_value != 'NAN'
     """
 
     query += append_parameters_to_query(

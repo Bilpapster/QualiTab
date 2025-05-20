@@ -7,15 +7,22 @@ from utils import connect_to_db, flatten_extend, fetch_baseline_metric_value, fe
 TRAIN_SIZE_MIN = 0
 TRAIN_SIZE_MAX = 10000
 
+ANNOTATIONS_COLOR = '#5B676D' # gnumental gray
+
 # --- Configuration ---
 plt.rcParams['font.size'] = '14'
-error_types = ['MCAR', 'SCAR', 'CSCAR']  # Error types for the lines
+error_types = [
+    'MCAR',
+    'SCAR',
+    'CSCAR',
+]  # Error types for the lines
 
 # Using seaborn muted palette colors (blue, orange, purple)
 colors = {
     error_types[0]: '#4878d0',
     error_types[1]: '#ee854a',
-    error_types[2]: '#9d6acc'}
+    error_types[2]: '#9d6acc'
+}
 
 markers = {
     error_types[0]: 'o',
@@ -26,54 +33,52 @@ markers = {
 linestyles = ['-', '--']  # Different line styles for each error scenario ['zero intervention', 'perfect context']
 
 line_labels = {  # Labels for the data lines in the legend
-    error_types[0]: 'missing \nvalues',
+    error_types[0]: 'missing values',
     error_types[1]: 'scaling',
-    error_types[2]: 'categorical \nshift'
+    error_types[2]: 'categorical shift'
 }
 
 evaluation_methods_for_ax_titles = [
-    '(a) 1-NN',
-    '(b) 3-NN',
-    '(c) 5-NN',
-    '(d) 10-NN',
-    '(e) Linear Probing',
-    '(f) K-means',
+    '(a) CLE+zED',
+    '(b) COR+zED',
+    '(e) ALL+zED',
+    '(c) CLE+CosD',
+    '(d) COR+CosD',
+    '(f) ALL+CosD',
 ]
 
 x_labels = [
     'corruption rate',
     '', # meaning 'corruption rate'
-    '', # meaning 'corruption rate'
-    '', # meaning 'corruption rate'
-    '', # meaning 'corruption rate'
-    '', # meaning 'corruption rate'
+    '',  # meaning 'corruption rate'
+    '',  # meaning 'corruption rate'
+    '',  # meaning 'corruption rate'
+    '',  # meaning 'corruption rate'
 ]
 
 y_labels = [
-    'Cosine Similarity',
-    '', # meaning 'Cosine Similarity',
-    '', # meaning'Cosine Similarity',
-    '', # meaning'Cosine Similarity',
-    'ROC AUC',
-    'Purity',
+    'z-norm. Euclid. Dist.',
+    '', # meaning 'Z-norm Euclidean distance'
+    '', # meaning 'Z-norm Euclidean distance'
+    'Cosine Dist.',
+    '', # meaning 'Cosine similarity'
+    '',  # meaning 'Cosine similarity'
 ]
 
 evaluation_types_names_for_queries = [
-    ('knn similarity', 'Avg Cosine Similarity (k=1) (all)'), # todo replace with 'corrupted' when finished
-    ('knn similarity', 'Avg Cosine Similarity (k=3) (all)'),
-    ('knn similarity', 'Avg Cosine Similarity (k=5) (all)'),
-    ('knn similarity', 'Avg Cosine Similarity (k=10) (all)'),
-    ('linear probing fit to all', 'ROC AUC'),
-    ('clustering all test', 'Purity'),
+    ('DFR_CLE', 'ZED'),
+    ('DFR_COR', 'ZED'),
+    ('DFR_ALL', 'ZED'),
+    ('DFR_CLE', 'COS'),
+    ('DFR_COR', 'COS'),
+    ('DFR_ALL', 'COS'),
 ]
 
 conn, cursor = connect_to_db()
 zero_intervention_metric_values_dicts = [
     fetch_corrupted_metric_values(
         conn, evaluation_type=evaluation_type,
-        metric_name=str(metric_name).replace('all', 'corrupted'),
-        train_size_max=TRAIN_SIZE_MAX,
-        train_size_min=TRAIN_SIZE_MIN,
+        metric_name=metric_name,
         tag="DIRTY_DIRTY",
     )
     for evaluation_type, metric_name in evaluation_types_names_for_queries
@@ -82,9 +87,7 @@ zero_intervention_metric_values_dicts = [
 perfect_context_metric_values_dicts = [
     fetch_corrupted_metric_values(
         conn, evaluation_type=evaluation_type,
-        metric_name=str(metric_name).replace('all', 'corrupted'),
-        train_size_max=TRAIN_SIZE_MAX,
-        train_size_min=TRAIN_SIZE_MIN,
+        metric_name=metric_name,
         tag="CLEAN_DIRTY",
     )
     for evaluation_type, metric_name in evaluation_types_names_for_queries
@@ -140,8 +143,15 @@ for i, ax in enumerate(axs):
         for line_idx in range(num_lines_per_plot): # essentially for error type in error types
             x_values_for_error_type_in_subplot = x_values_for_subplot[line_idx]
             y_values_for_error_type_in_subplot = y_values_for_subplot[line_idx]
-            min_y_in_plot = min(min_y_in_plot, np.min(y_values_for_error_type_in_subplot), horizontal_line_yvals[i])  # Update minimum y
-            max_y_in_plot = max(max_y_in_plot, np.max(y_values_for_error_type_in_subplot), horizontal_line_yvals[i])  # Update maximum y
+            min_y_in_plot = min(
+                min_y_in_plot, np.min(y_values_for_error_type_in_subplot),
+                # horizontal_line_yvals[i]
+            )  # Update minimum y
+
+            max_y_in_plot = max(
+                max_y_in_plot, np.max(y_values_for_error_type_in_subplot),
+                # horizontal_line_yvals[i]
+            )  # Update maximum y
 
             line, = ax.plot(x_values_for_error_type_in_subplot, y_values_for_error_type_in_subplot,
                             marker=markers[error_types[line_idx]],
@@ -155,7 +165,7 @@ for i, ax in enumerate(axs):
                 legend_handles.append(line)
 
     # Plot the horizontal dashed green line
-    ax.axhline(y=horizontal_line_yvals[i], color='green', linestyle=':', linewidth=1.5)
+    # ax.axhline(y=horizontal_line_yvals[i], color='green', linestyle=':', linewidth=1.5)
 
     # --- Axis Styling ---
     # Set y-axis limits
@@ -195,21 +205,60 @@ for i, ax in enumerate(axs):
     ax.set_xlabel(x_labels[i], labelpad=2)  # labelpad adds space between axis and title
     ax.set_ylabel(y_labels[i], labelpad=2)  # labelpad adds space between axis and title
 
+    # Add annotations to some of the plots
+    # annotation for the first plot (i=0)
+    if i == 0:
+        ax.annotate(
+            "all dashed lines",
+            xy=(0.35, 0.1),
+            xytext=(0.06, 2.4),
+            fontsize=12,
+            color=ANNOTATIONS_COLOR,
+            style='italic',
+            arrowprops=dict(
+                arrowstyle='->', lw=0.7,
+                color=ANNOTATIONS_COLOR, linestyle='-',
+                connectionstyle='arc3,rad=-0.15', joinstyle='round'
+            ),
+        )
+        ax.set_ylim((lower_ylim, upper_ylim + 0.35))  # Adjust y-limits to make space for the annotation
+
+    # annotation for the fourth plot (i=3)
+    if i == 3:
+        ax.annotate(
+            "all dashed lines",
+            xy=(0.35, 0.001),
+            xytext=(0.06, 0.0175),
+            fontsize=12,
+            color=ANNOTATIONS_COLOR,
+            style='italic',
+            arrowprops=dict(
+                arrowstyle='->', lw=0.7,
+                color=ANNOTATIONS_COLOR, linestyle='-',
+                connectionstyle='arc3,rad=-0.15', joinstyle='round'
+            ),
+        )
+
+
 # --- Shared Legend ---
 # Create dummy lines for the legend items that are not plotted data
 # ideal_line = mlines.Line2D([], [], color='green', linestyle='--', marker=None, markersize=10, label='perfect data')
 
 zero_intervention_line = mlines.Line2D([], [], color='black', linestyle='-', marker=None,
-                           markersize=10, label='zero \nintervention')
+                           markersize=10, label='zero intervention')
 
 perfect_context_line = mlines.Line2D([], [], color='black', linestyle='--', marker=None,
-                           markersize=10, label='perfect \ncontext')
+                           markersize=10, label='perfect context')
 
 perfect_line = mlines.Line2D([], [], color='green', linestyle=':', marker=None,
-                             markersize=10, label='perfect data \n(baseline)')
+                             markersize=10, label='perfect data (baseline)')
 
 # Add these dummy handles to our list
-all_legend_handles = legend_handles + [perfect_context_line, zero_intervention_line, perfect_line]
+all_legend_handles = legend_handles + [
+    perfect_context_line,
+    zero_intervention_line,
+    # perfect_line,
+]
 
 # Create the legend below the subplots
 # Adjust bbox_to_anchor y-value (e.g., -0.2, -0.3) to position it correctly below the titles
@@ -217,7 +266,7 @@ all_legend_handles = legend_handles + [perfect_context_line, zero_intervention_l
 fig.legend(handles=all_legend_handles,
            fontsize="16",
            loc='lower center',  # Position center align at the bottom
-           bbox_to_anchor=(0.5, -0.35),  # Adjust Y value (-0.25) to control distance below plots
+           bbox_to_anchor=(0.5, -0.25),  # Adjust Y value (-0.25) to control distance below plots
            ncol=len(all_legend_handles),  # Number of columns = number of items
            frameon=True)  # Remove legend frame
 

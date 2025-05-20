@@ -15,7 +15,7 @@ from config import naming_config as names
 from evaluation import (
     linear_probing,
     euclidean_distances_from_reference,
-    cosine_similarity_from_reference,
+    cosine_distance_from_reference,
     roc_auc as auc
 )
 
@@ -182,7 +182,7 @@ def evaluate_embeddings(experiment):
 
         clean_clean_embeddings = np.array(fetch_clean_clean_embeddings(dataset_name=dataset_name, random_seed=random_seed))
         euclidean_distances = np.array(euclidean_distances_from_reference(clean_clean_embeddings, test_embeddings, z_normalize_first=True))
-        cosine_similarities = np.array(cosine_similarity_from_reference(clean_clean_embeddings, test_embeddings))
+        cosine_similarities = np.array(cosine_distance_from_reference(clean_clean_embeddings, test_embeddings))
 
         try:
             # Avg Z-norm Euclidean distance from respective embeddings when they are clean (reference) for all samples
