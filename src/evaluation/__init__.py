@@ -1,6 +1,6 @@
 from .evaluation_metrics import (
     euclidean_distances_from_reference,
-    cosine_similarity_from_reference,
+    cosine_distance_from_reference,
     silhouette_score,
     purity,
     knn_avg_cosine_similarity,

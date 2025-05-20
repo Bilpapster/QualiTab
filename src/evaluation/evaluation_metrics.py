@@ -76,7 +76,7 @@ def euclidean_distances_from_reference(reference_embeddings, target_embeddings, 
     ])
 
 
-def cosine_similarity_from_reference(reference_embeddings, target_embeddings):
+def cosine_distance_from_reference(reference_embeddings, target_embeddings):
     """
     Calculates the cosine similarity from each target embedding to a reference embedding.
     For instance, calculates the similarity between the first target embedding and the first reference embedding,
