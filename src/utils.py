@@ -262,7 +262,7 @@ def fetch_corrupted_metric_values(
 
     cursor = conn.cursor()
     query = f"""
-    SELECT CONCAT(ex.error_type, '_', ex.row_corruption_percent) as type_rate, AVG(metric_value) AS avg_metric_value_error
+    SELECT CONCAT(ex.error_type, '_', ev.row_corruption_percent) as type_rate, AVG(metric_value) AS avg_metric_value_error
     FROM embeddings_experiments ex JOIN embedding_evaluation_metrics ev
     ON ex.experiment_id = ev.experiment_id
     WHERE ex.tag = '{tag}'
