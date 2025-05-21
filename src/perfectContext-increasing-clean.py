@@ -27,63 +27,51 @@ markers = {
 linestyles = ['--', '-']  # Different line styles for each error scenario ['fewer context', 'more context']
 
 line_labels = {  # Labels for the data lines in the legend
-    error_types[0]: 'missing values',
+    error_types[0]: 'missing\nvalues',
     error_types[1]: 'scaling',
-    error_types[2]: 'categorical shift'
+    error_types[2]: 'categorical\nshift'
 }
 
 evaluation_methods_for_ax_titles = [
-    '(a) 1-NN',
-    '(b) 3-NN',
-    '(c) 5-NN',
-    '(d) 10-NN',
-    '(e) Linear Probing',
-    '(f) K-means',
+    '(a) ALL+TL',
+    '(b) ALL+CC',
 ]
 
 x_labels = [
     'corruption rate',
     '', # meaning 'corruption rate'
-    '', # meaning 'corruption rate'
-    '', # meaning 'corruption rate'
-    '', # meaning 'corruption rate'
-    '', # meaning 'corruption rate'
 ]
 
 y_labels = [
-    'Cosine Similarity',
-    '', # meaning 'Cosine Similarity',
-    '', # meaning'Cosine Similarity',
-    '', # meaning'Cosine Similarity',
     'ROC AUC',
-    'Purity',
+    '', # meaning 'ROC AUC',
 ]
 
 evaluation_types_names_for_queries = [
-    ('knn similarity', 'Avg Cosine Similarity (k=1) (all)'),
-    ('knn similarity', 'Avg Cosine Similarity (k=3) (all)'),
-    ('knn similarity', 'Avg Cosine Similarity (k=5) (all)'),
-    ('knn similarity', 'Avg Cosine Similarity (k=10) (all)'),
-    ('linear probing fit to all', 'ROC AUC'),
-    ('clustering all test', 'Purity'),
+    ('LP_ALL_TLGT', 'ROC_AUC'),
+    ('LP_ALL_CCGT', 'ROC_AUC'),
 ]
 
 conn, cursor = connect_to_db()
 clean_few_metric_values_dicts = [
     fetch_corrupted_metric_values(
         conn, evaluation_type=evaluation_type,
-        metric_name=str(metric_name).replace('all', 'all'),
+        metric_name=metric_name,
         train_size_min=0,
         train_size_max=5000,
         tag="CLEAN_DIRTY",
     )
     for evaluation_type, metric_name in evaluation_types_names_for_queries
 ]
+import pprint
+
+# pprint.pp(clean_few_metric_values_dicts)
+# exit()
 
 clean_many_metric_values_dicts = [
     fetch_corrupted_metric_values(
         conn, evaluation_type=evaluation_type,
-        metric_name=str(metric_name).replace('all', 'all'),
+        metric_name=metric_name,
         train_size_min=5000,
         train_size_max=10000,
         tag="CLEAN_DIRTY",
@@ -109,15 +97,15 @@ y_values_clean_many = [
 y_values_for_scenarios = [y_values_clean_few, y_values_clean_many]
 
 # y-values for the horizontal green dashed line in each plot
-horizontal_line_yvals = [
-    fetch_baseline_metric_value(conn, evaluation_type=evaluation_type, metric_name=metric_name)
-    for evaluation_type, metric_name in evaluation_types_names_for_queries
-]
+# horizontal_line_yvals = [
+#     fetch_baseline_metric_value(conn, evaluation_type=evaluation_type, metric_name=metric_name)
+#     for evaluation_type, metric_name in evaluation_types_names_for_queries
+# ]
 
 # --- Plotting ---
 # Create the figure and axes grid
-fig, axs = plt.subplots(1, num_plots, figsize=(16, 2), sharey=False)
-plt.subplots_adjust(wspace=0.66) # adjust the space between plots so that y_labels are more readable
+fig, axs = plt.subplots(1, num_plots, figsize=(8, 3), sharey=False)
+plt.subplots_adjust(wspace=0.2) # adjust the space between plots so that y_labels are more readable
 
 # Ensure axs is always iterable, even if num_plots is 1
 if num_plots == 1:
@@ -141,8 +129,8 @@ for i, ax in enumerate(axs):
         for line_idx in range(num_lines_per_plot): # essentially for error type in error types
             x_values_for_error_type_in_subplot = x_values_for_subplot[line_idx]
             y_values_for_error_type_in_subplot = y_values_for_subplot[line_idx]
-            min_y_in_plot = min(min_y_in_plot, np.min(y_values_for_error_type_in_subplot), horizontal_line_yvals[i])  # Update minimum y
-            max_y_in_plot = max(max_y_in_plot, np.max(y_values_for_error_type_in_subplot), horizontal_line_yvals[i])  # Update maximum y
+            min_y_in_plot = min(min_y_in_plot, np.min(y_values_for_error_type_in_subplot))  # Update minimum y
+            max_y_in_plot = max(max_y_in_plot, np.max(y_values_for_error_type_in_subplot))  # Update maximum y
 
             line, = ax.plot(x_values_for_error_type_in_subplot, y_values_for_error_type_in_subplot,
                             marker=markers[error_types[line_idx]],
@@ -172,7 +160,7 @@ for i, ax in enumerate(axs):
     y_ticks = [
         lower_ylim + (upper_ylim - lower_ylim) / 4,
         lower_ylim + (upper_ylim - lower_ylim)/2,
-        upper_ylim
+        min(upper_ylim, 1)
     ]
     number_of_decimal_places = 2
     if round(y_ticks[0], number_of_decimal_places) == round(y_ticks[1], number_of_decimal_places) or round(y_ticks[1], number_of_decimal_places) == round(y_ticks[2], number_of_decimal_places):
@@ -201,15 +189,16 @@ for i, ax in enumerate(axs):
 # ideal_line = mlines.Line2D([], [], color='green', linestyle='--', marker=None, markersize=10, label='perfect data')
 
 zero_intervention_line = mlines.Line2D([], [], color='black', linestyle='--', marker=None,
-                           markersize=10, label='<5K clean context')
+                           markersize=10, label='<5K samples\nclean context')
 
 perfect_context_line = mlines.Line2D([], [], color='black', linestyle='-', marker=None,
-                           markersize=10, label='5K-10K clean context')
+                           markersize=10, label='5K-10K samples\nclean context')
 
 # perfect_line = mlines.Line2D([], [], color='black', linestyle='-', marker=None, markersize=10, label='perfect context')
 
 # Add these dummy handles to our list
-all_legend_handles = legend_handles + [zero_intervention_line, perfect_context_line]
+# all_legend_handles = legend_handles + [zero_intervention_line, perfect_context_line]
+all_legend_handles = [zero_intervention_line, perfect_context_line]
 
 # Create the legend below the subplots
 # Adjust bbox_to_anchor y-value (e.g., -0.2, -0.3) to position it correctly below the titles
@@ -217,7 +206,7 @@ all_legend_handles = legend_handles + [zero_intervention_line, perfect_context_l
 fig.legend(handles=all_legend_handles,
            fontsize="15",
            loc='lower center',  # Position center align at the bottom
-           bbox_to_anchor=(0.5, -0.25),  # Adjust Y value (-0.25) to control distance below plots
+           bbox_to_anchor=(0.5, -0.15),  # Adjust Y value (-0.25) to control distance below plots
            ncol=len(all_legend_handles),  # Number of columns = number of items
            frameon=True)  # Remove legend frame
 
@@ -226,5 +215,5 @@ fig.legend(handles=all_legend_handles,
 # Using subplots_adjust might be better than tight_layout when placing a fig.legend manually.
 fig.subplots_adjust(bottom=0.3)  # Increase bottom margin to make space for titles and legend
 
-plt.savefig(f"perfectContext-increasing-clean.eps", dpi=300, bbox_inches='tight', format='eps')
+plt.savefig(f"perfectContext-increasing-clean.eps", dpi=500, bbox_inches='tight', format='eps')
 # plt.show()
