@@ -1,6 +1,9 @@
 # QualiTab
 *The first open-source framework for **assessing the impact of imperfect data** on tabular foundation models!*
 
+
+![QualiTab overview](https://github.com/user-attachments/assets/3a819135-12d3-411c-8874-f05664d752b3)
+
 ## About
 
 Deep learning models are typically evaluated on high-quality, curated benchmark datasets. But how realistic is this? Real-world data is often far from curated, benchmark ones. In fact, real-world data is often imperfect, containing various types of data quality issues such as missing values, outliers, and noise. These issues can significantly impact the performance of deep learning models, leading to suboptimal results in real-world applications.
