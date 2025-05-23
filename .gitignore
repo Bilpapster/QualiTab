@@ -175,3 +175,5 @@ cython_debug/
 
 tabpfn-extensions
 CleanML/datasets/
+
+src/figures/
