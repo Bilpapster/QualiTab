@@ -38,8 +38,8 @@ line_labels = {  # Labels for the data lines in the legend
 evaluation_methods_for_ax_titles = [
     '(a) CLE+TL',
     '(b) COR+TL',
-    '(e) ALL+TL',
-    '(f) ALL+CC',
+    '(c) ALL+TL',
+    '(d) ALL+CC',
 ]
 
 x_labels = [
