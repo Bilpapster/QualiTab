@@ -67,9 +67,9 @@ Straightforward guidelines for making **QualiTab** your very own are on their wa
 
 ## Acknowledgements
 
-At the current time, **QualiTab** builds upon significant previous contributions in the areas of benchmarking and realistic data generation. We therefore acknowledge the following projects:
+At the current time, **QualiTab** builds upon significant previous contributions in the areas of benchmarking and realistic data corruption. We therefore acknowledge the following projects:
 - [The OpenML project](https://www.openml.org/) for providing a large collection of datasets and tasks for benchmarking machine learning algorithms.
-- [Jenga](https://github.com/schelterlabs/jenga) for providing a framework for generating realistic data quality issues.
+- [Jenga](https://github.com/schelterlabs/jenga) for providing a framework for injecting realistic data quality issues into ML datasets.
 
 ## Contact 
 
