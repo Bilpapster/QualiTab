@@ -50,6 +50,17 @@ def get_seeds_from_env_or_else_default() -> list[int]:
     seeds_str = os.getenv('SEEDS', '100,200,300')
     return parse_comma_separated_integers(seeds_str)
 
+def get_debug_mode_from_env_or_else_false() -> bool:
+    """
+    Retrieves the debug mode from the environment variable 'DEBUG'.
+    If the environment variable is not set, it returns False.
+    """
+    import os
+
+    load_dotenv()
+    debug_mode_str = os.getenv('DEBUG', 'False')
+    return debug_mode_str.lower() in ['true', '1', 'yes', 'y']
+
 
 def get_datasets_to_skip_from_env_or_else_empty() -> set[int]:
     """
