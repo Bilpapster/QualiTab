@@ -63,12 +63,12 @@ experiments = [
 ]
 
 COLUMN_TITLES = [
-    '(a) Raw (TL)',
-    '(b) Perfect emb. (TL)',
-    '(c) 10% corr (TL).',
-    '(d) 20% corr. (TL)',
-    '(e) 40% corr. (TL)',
-    '(f) 40% corr. (CC)',
+    '(a) Raw Data + TL',
+    '(b) Perfect emb. + TL',
+    '(c) 10% corr. + TL',
+    '(d) 20% corr. + TL',
+    '(e) 40% corr. + TL',
+    '(f) 40% corr. + CC',
 ]
 
 ALPHA = 0.8 # transparency for the points of the embeddings
