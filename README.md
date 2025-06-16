@@ -1,5 +1,5 @@
 # QualiTab
-*The first open-source framework for **assessing the impact of imperfect data** on tabular foundation models!*
+*The first open-source framework for **assessing the impact of imperfect data** on tabular foundation models.*
 
 
 ![QualiTab overview](https://github.com/user-attachments/assets/3a819135-12d3-411c-8874-f05664d752b3)
@@ -52,13 +52,13 @@ To replicate our experiments on the impact of 3 different data quality issues on
    > Note that the `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and `POSTGRES_MAPPED_PORT` variables can be set to any values you like the first time you run the experiments. After the first run, the database instance will be created with these credentials, so you should consistently use the same values in subsequent runs. The `POSTGRES_MAPPED_PORT` variable should be set to a port that is not in use on your machine, so you can access the database instance from your host machine. The `SEEDS` variable is used to control the random seed for reproducibility, and the `DATASETS_TO_SKIP` variable is used to skip certain datasets that are known to cause issues during the experiments. If you want to exactly replicate our experiments, you should use the same values as in the example above. If exact replication is not required, you can change these values to any other valid ones, but make sure to keep the same format. To make sure that the `.env` file is correctly created with the configurations of your choice you can run `cat .env` to see its contents.
 3. Start all services using Docker Compose:
    ```bash
-   docker compose up --build postgres adminer
+   docker compose up --build -d
    ```
 4. Run the script we have used for our experiments:
    ```bash
    docker exec -it tabpfn python main_embeddings.py
    ```
-   > **Important**: This can take several hours (> 45h) to complete if running on a GPU. If you are running it on a CPU the execution time will be significantly higher. We suggest using a GPU for faster execution. See Kaggle's and Google Colab's free GPU offerings for a quick start. The `main_embeddings.py` script will run the experiments and store the results in the PostgreSQL database instance running in the Docker container. You can run the experiments over multiple runs, the script automatically avoids re-calculating the embeddings for datasets that have already been processed.
+   > **Important**: This can take a significant amount of time (> 45h) to complete, even if running on a GPU. If you are using CPU only, the execution time will be significantly higher. We suggest using a GPU for faster execution. See Kaggle's and Google Colab's free GPU offerings for a quick start. The `main_embeddings.py` script will run the experiments and store the results in the PostgreSQL database instance running in the Docker container. You can run the experiments over multiple runs, the script automatically avoids re-calculating the embeddings for datasets that have already been processed.
 5. (Optional) You can see the progress of the experiments by accessing the Adminer web interface at [http://localhost:8080](http://localhost:8080). Use the credentials you set in the `.env` file to log in (make sure to select "Postgres" under the "System" option). You can then browse the `embeddings_experiments` table to see the results of the experiments.
 
 #### How to create your own experiments

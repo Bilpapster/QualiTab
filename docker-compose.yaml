@@ -5,7 +5,7 @@ services:
     depends_on:
       - postgres
     volumes:
-      - ./src:/app/src
+      - ./src:/app
     env_file:
       - .env
     tty: true

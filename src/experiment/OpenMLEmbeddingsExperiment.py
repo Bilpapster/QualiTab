@@ -138,5 +138,8 @@ class OpenMLEmbeddingsExperiment(EmbeddingsExperiment, OpenMLExperiment):
             'gpu_info': json.dumps(get_GPU_information()),
         }
         self.log(f"Dataset finished. Execution time: {result['execution_time']} seconds.")
-        self.write_experiment_result_to_db(result)
+        if self.debug:
+            self.log(f"Debug mode is enabled (no db storage). Result: {result}")
+        else:
+            self.write_experiment_result_to_db(result)
         self._rollback_data_based_on_mode(self.experiment_mode)
