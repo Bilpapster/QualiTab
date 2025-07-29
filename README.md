@@ -4,6 +4,20 @@
 
 ![QualiTab overview](https://github.com/user-attachments/assets/3a819135-12d3-411c-8874-f05664d752b3)
 
+Official, actively extended codebase for the research paper *Out in the Wild: Investigating the Impact of Imperfect Data on a Tabular Foundation Model*, appearing in the [QDB workshop](https://qdb-workshop.github.io/) of the [VLDB 2025 Conference](https://vldb.org/2025/) (London, UK - September 2025).
+
+```bibtex
+@inproceedings{papastergios2025qualitab,
+   title={Out in the Wild: Investigating the Impact of Imperfect Data on a Tabular Foundation Model},
+   author={Papastergios, Vasileios and Gounaris, Anastasios},
+   booktitle={14th International Workshop on Quality in Databases (QDB’25)},
+   year={2025},
+   month = sep, 
+   url={TBA}
+}
+```
+> *Note:* This is an evolving codebase, actively extended to cover more models (e.g., [TabICL](https://github.com/soda-inria/tabicl)), more datasets (e.g., the [TabArena benchmark](https://arxiv.org/abs/2506.16791)) and even more ways to evaluate the impact of imperfect data (e.g., predictive performance and synthetic data generation). If your goal is to reproduce the exact experimental results of our QDB'25 paper, you can use the codebase snapshot identified by commit c5976ac6bf3a67a5fc77b887d9406eee3ebc3f27. Otherwise, our suggestion is to use the latest version to have access to all the latest features and improvements.
+
 ## About
 
 Deep learning models are typically evaluated on high-quality, curated benchmark datasets. _But how realistic is this?_ Real-world datasets are often far from curated, benchmark ones. In fact, real-world data is often imperfect, containing various types of data quality issues such as missing values, outliers, and noise. These issues can significantly impact the performance of deep learning models, leading to suboptimal results in real-world applications.
