@@ -16,7 +16,7 @@ Official, actively extended codebase for the research paper *Out in the Wild: In
    url={https://www.vldb.org/2025/Workshops/VLDB-Workshops-2025/QDB/QDB25_1.pdf}
 }
 ```
-> *Note:* This is an evolving codebase, actively extended to cover more models (e.g., [TabICL](https://github.com/soda-inria/tabicl)), more datasets (e.g., the [TabArena benchmark](https://arxiv.org/abs/2506.16791)) and even more ways to evaluate the impact of imperfect data (e.g., predictive performance and synthetic data generation). If your goal is to reproduce the exact experimental results of our QDB'25 paper, you can use the codebase snapshot identified by commit c5976ac6bf3a67a5fc77b887d9406eee3ebc3f27. Otherwise, our suggestion is to use the latest version to have access to all the latest features and improvements.
+> *Note:* This is an evolving codebase, actively extended to cover more models (e.g., [TabICL](https://github.com/soda-inria/tabicl), [Mitra](https://www.amazon.science/blog/mitra-mixed-synthetic-priors-for-enhancing-tabular-foundation-models)), more datasets (e.g., the [TabArena benchmark](https://arxiv.org/abs/2506.16791)) and even more ways to evaluate the impact of imperfect data (e.g., predictive performance and synthetic data generation). If your goal is to reproduce the exact experimental results of our QDB'25 paper, you can use the codebase snapshot identified by commit c5976ac6bf3a67a5fc77b887d9406eee3ebc3f27. Otherwise, our suggestion is to use the latest version to have access to all the latest features and improvements.
 
 ## About
 
